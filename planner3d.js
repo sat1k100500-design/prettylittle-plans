@@ -31,28 +31,37 @@ export async function createPlanner(THREE, base, opts = {}) {
     g.filter = 'none';
     for (let i = 0; i < 160; i++) { g.strokeStyle = `rgba(110,110,110,${.15 + rnd() * .25})`; g.lineWidth = .6; g.beginPath(); const x = rnd() * s, y = rnd() * s, a = rnd() * 6.3, l = 6 + rnd() * 40; g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke() }
   });
+  const frost = grain.clone(); frost.repeat.set(26, 38); frost.needsUpdate = true;   // матова мікрофактура пластику
+  const ribs = canvasTex(64, (g, n) => {             // рубчик резинки: нитки вздовж
+    g.fillStyle = '#777'; g.fillRect(0, 0, n, n);
+    for (let y = 0; y < n; y += 4) { g.fillStyle = '#aaa'; g.fillRect(0, y, n, 2) }
+    for (let x = 0; x < n; x += 2) { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x, 0, 1, n) }
+  });
+  ribs.repeat.set(140, 3);
   const pageGrain = grain.clone(); pageGrain.repeat.set(4, 6); pageGrain.needsUpdate = true;
   T.edge.wrapS = T.edge.wrapT = THREE.RepeatWrapping; T.edge.repeat.set(1, 16);
 
   /* ---------- матеріали ---------- */
   const M = {
     // друк на напівпрозорому пластику (зверху) і він же зсередини — дзеркально й темніше
-    plastic: new THREE.MeshPhysicalMaterial({ map: T.cover, transparent: true, opacity: .95, roughness: .3, clearcoat: 1, clearcoatRoughness: .08, depthWrite: false }),
+    plastic: new THREE.MeshPhysicalMaterial({ map: T.cover, transparent: true, opacity: .96, roughness: .42, bumpMap: frost, bumpScale: .35, clearcoat: .6, clearcoatRoughness: .1, depthWrite: false }),
     plasticIn: new THREE.MeshPhysicalMaterial({ map: T.cover, color: '#e9ddd6', transparent: true, opacity: .92, roughness: .35, depthWrite: false }),
-    plasticBack: new THREE.MeshPhysicalMaterial({ map: T.back, roughness: .3, clearcoat: 1, clearcoatRoughness: .08 }),
+    plasticBack: new THREE.MeshPhysicalMaterial({ map: T.back, roughness: .42, clearcoat: 1, clearcoatRoughness: .1 }),
     // крайка пластику: світиться, як торець акрилу
-    rim: new THREE.MeshPhysicalMaterial({ color: '#fff6ec', emissive: '#fff0e2', emissiveIntensity: .42, roughness: .1, clearcoat: 1, clearcoatRoughness: .05 }),
-    edge: new THREE.MeshStandardMaterial({ map: T.edge, roughness: .95 }),
-    gold: new THREE.MeshStandardMaterial({ color: '#d6ab63', metalness: 1, roughness: .16 }),
-    elastic: new THREE.MeshPhysicalMaterial({ color: '#5e0c2e', roughness: .6, sheen: .8, sheenRoughness: .5, sheenColor: new THREE.Color('#b0607e'), transparent: true }),
+    rim: new THREE.MeshPhysicalMaterial({ color: '#fff7ee', emissive: '#fff2e4', emissiveIntensity: .5, roughness: .08, clearcoat: 1, clearcoatRoughness: .04 }),
+    edge: new THREE.MeshStandardMaterial({ map: T.edge, roughness: .95, envMapIntensity: .9 }),
+    gold: new THREE.MeshStandardMaterial({ color: '#dcb26a', metalness: 1, roughness: .12 }),
+    elastic: new THREE.MeshPhysicalMaterial({ color: '#5e0c2e', roughness: .72, bumpMap: ribs, bumpScale: 1.2, sheen: .35, sheenRoughness: .45, sheenColor: new THREE.Color('#b0607e'), transparent: true }),
     // скляні блики: чорний колір + додавальне змішування — лише відбиття, без засвічування друку
-    glare: new THREE.MeshPhysicalMaterial({ color: '#000000', metalness: 0, roughness: .35, roughnessMap: smudge, ior: 1.5, specularIntensity: 1,
-      clearcoat: 1, clearcoatRoughness: .03, iridescence: .15, iridescenceIOR: 1.3, iridescenceThicknessRange: [200, 560], envMapIntensity: .17,
+    glare: new THREE.MeshPhysicalMaterial({ color: '#000000', metalness: 0, roughness: .16, roughnessMap: smudge, ior: 1.5, specularIntensity: 1,
+      clearcoat: 1, clearcoatRoughness: .03, iridescence: .15, iridescenceIOR: 1.3, iridescenceThicknessRange: [200, 560],
       transparent: true, opacity: .05, depthWrite: false, blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor }),
     ribbon: new THREE.MeshPhysicalMaterial({ color: '#6a1434', roughness: .38, sheen: 1, sheenRoughness: .3, sheenColor: new THREE.Color('#d48aa5'), side: THREE.DoubleSide }),
   };
-  for (const k of ['glare']) M[k].userData.keepEnv = true;
-  const pageMat = (tex, side = THREE.FrontSide) => new THREE.MeshStandardMaterial({ map: tex, bumpMap: pageGrain, bumpScale: .25, roughness: .88, side });
+  // власна сила відбитого оточення: друк під пластиком не має вицвітати
+  for (const [k, v] of [['glare', .2], ['plastic', .18], ['plasticIn', .2], ['plasticBack', .2], ['rim', .4], ['elastic', .3], ['edge', .9]]) { M[k].envMapIntensity = v; M[k].userData.keepEnv = true }
+  // папір світліший за пластик: більше відбитого світла
+  const pageMat = (tex, side = THREE.FrontSide) => { const m = new THREE.MeshStandardMaterial({ map: tex, bumpMap: pageGrain, bumpScale: .25, roughness: .88, side, envMapIntensity: 1.0 }); m.userData.keepEnv = true; return m };
 
   /* ---------- геометрія ---------- */
   // прямокутник із заокругленими кутами: r — з боку обрізу (праворуч), rl — біля корінця; holes — прорізи під кільця
@@ -149,7 +158,7 @@ export async function createPlanner(THREE, base, opts = {}) {
 
   // кільця: виходять зі сторінок, проходять крізь прорізи обкладинки й огинають корінець
   for (const z of RINGS) {
-    const r = new THREE.Mesh(new THREE.TorusGeometry(RING_R, .0064, 18, 72), M.gold);
+    const r = new THREE.Mesh(new THREE.TorusGeometry(RING_R, .0052, 20, 96), M.gold);
     r.position.set(PIV.x, PIV.y, z); root.add(r);
   }
 
@@ -179,20 +188,21 @@ export async function createPlanner(THREE, base, opts = {}) {
     const env = new THREE.Scene(); env.background = new THREE.Color(0, 0, 0);
     // м'які лампи: яскравість спадає до країв, тож відбиття — плавний перелив, а не різка пляма
     const soft = canvasTex(128, (g, n) => {
-      const gx = g.createLinearGradient(0, 0, 0, n); gx.addColorStop(0, '#000'); gx.addColorStop(.5, '#fff'); gx.addColorStop(1, '#000');
+      const gx = g.createLinearGradient(0, 0, 0, n); gx.addColorStop(0, '#000'); gx.addColorStop(.35, '#fff'); gx.addColorStop(.65, '#fff'); gx.addColorStop(1, '#000');
       g.fillStyle = gx; g.fillRect(0, 0, n, n);
       const gy = g.createLinearGradient(0, 0, n, 0); gy.addColorStop(0, 'rgba(0,0,0,1)'); gy.addColorStop(.25, 'rgba(0,0,0,0)'); gy.addColorStop(.75, 'rgba(0,0,0,0)'); gy.addColorStop(1, 'rgba(0,0,0,1)');
       g.fillStyle = gy; g.fillRect(0, 0, n, n);
     }, true);
     const panel = (w, h, pos, rot, k) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: soft, color: new THREE.Color(k, k * .97, k * .94), side: THREE.DoubleSide }));
       m.position.set(...pos); m.lookAt(0, 0, 0); m.rotateZ(rot); env.add(m) };
-    // камера згори-спереду-зліва: дзеркальне відбиття дивиться приблизно на (0.11, 0.91, -0.39)
-    panel(7, .55, [.1, 4.57, -1.8], .62, 1.5);         // діагональний перелив через обкладинку
-    panel(7, .2, [.95, 4.55, -2.05], .62, 1.1);        // другий, тонший
-    panel(2.6, 3.4, [-2.4, 3.9, -1.6], 0, .5);         // м'який софтбокс зліва
-    panel(2.2, 3, [3.4, 2.8, -2.0], 0, .5);            // контровий справа
+    // камера згори-спереду-зліва й близько: відбиття з центру обкладинки дивиться приблизно на (0.2, 0.9, -0.38),
+    // а з її правого краю — на (0.31, 0.87, -0.38); смуги ламп проходять крізь ці напрямки по діагоналі
+    panel(8, .7, [.85, 4.5, -1.85], .7, 1.6);          // широкий перелив
+    panel(8, .22, [1.7, 4.3, -2.05], .7, 1.2);         // тонкий поруч
+    panel(2.6, 3.4, [-2.6, 3.9, -1.6], 0, .35);        // м'яке вікно зліва
+    panel(2.2, 3, [3.6, 2.8, -2.0], 0, .4);            // контрове справа
     const pm = new THREE.PMREMGenerator(opts.renderer);
-    M.glare.envMap = pm.fromScene(env, .03).texture; pm.dispose();
+    M.glare.envMap = pm.fromScene(env, .01).texture; pm.dispose();
   }
 
   // м'яка контактна тінь

@@ -11,7 +11,7 @@
 <style>[hidden]{display:none!important}img{max-width:100%}</style>
 <title>PRETTYLITTLE PLANS</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Jost:wght@300;400;500;600&family=Manrope:wght@400;500;600;700&display=swap">
 <style>
@@ -267,6 +267,7 @@ textarea.area{width:100%;min-height:90px;border:1px solid var(--line);background
 .stage.gl .gl3d{opacity:1}
 .stage.gl .scene{opacity:0;pointer-events:none;transition:opacity .3s}
 .bui[hidden]{display:none}
+.stage.gl .bui [data-bstep],.stage.gl .bui [data-traytoggle]{display:none}
 .glfade{position:absolute;z-index:8;pointer-events:none;transition:opacity .5s ease}
 /* перед переходом у пласку сторінку: усе, крім правої сторінки, тихо зникає */
 .book .bface.back,.book .backcover,.book .shadow,.book .ribbon,.book .rings,.book .charm{transition:opacity .55s ease}
@@ -970,18 +971,18 @@ function glInit(){
     const [{createPlanner},{RoomEnvironment}]=await Promise.all([import('./planner3d.js'),import('three/addons/environments/RoomEnvironment.js')]);
     const R=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
     const phone=matchMedia('(pointer:coarse)').matches||innerWidth<700;
-    R.setPixelRatio(Math.min(devicePixelRatio||1,2));R.outputColorSpace=THREE.SRGBColorSpace;R.toneMapping=THREE.NoToneMapping;
+    R.setPixelRatio(Math.min(devicePixelRatio||1,2));R.outputColorSpace=THREE.SRGBColorSpace;R.toneMapping=THREE.NeutralToneMapping||THREE.NoToneMapping;R.toneMappingExposure=.74;
     R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
     const scene=new THREE.Scene();
     const pm=new THREE.PMREMGenerator(R);scene.environment=pm.fromScene(new RoomEnvironment(),.04).texture;
-    scene.add(new THREE.HemisphereLight(0xfff8f4,0xd9c4b8,.5));
-    const key=new THREE.DirectionalLight(0xfff3e8,2.3);key.position.set(1.6,3.0,1.2);key.castShadow=true;
-    Object.assign(key.shadow.camera,{left:-2.2,right:2.2,top:2.2,bottom:-2.2,near:.5,far:9});key.shadow.mapSize.set(phone?1024:2048,phone?1024:2048);key.shadow.radius=6;key.shadow.bias=-.0004;key.shadow.normalBias=.012;
-    scene.add(key);const fill=new THREE.DirectionalLight(0xfff0f4,.85);fill.position.set(-2.6,1.6,1.4);scene.add(fill);
-    const ground=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.ShadowMaterial({opacity:.3}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+    scene.add(new THREE.HemisphereLight(0xfff8f4,0xc9b0a6,.28));
+    const key=new THREE.DirectionalLight(0xfff1e4,2.05);key.position.set(-1.5,3.1,1.7);key.castShadow=true;
+    Object.assign(key.shadow.camera,{left:-2.2,right:2.2,top:2.2,bottom:-2.2,near:.5,far:9});key.shadow.mapSize.set(phone?1024:2048,phone?1024:2048);key.shadow.radius=5;key.shadow.blurSamples=16;key.shadow.bias=-.0003;key.shadow.normalBias=.01;
+    scene.add(key);const fill=new THREE.DirectionalLight(0xffeef2,.4);fill.position.set(2.6,1.8,1.0);scene.add(fill);
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.ShadowMaterial({opacity:.34,color:0x4a2a2e}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
     const planner=await createPlanner(THREE,TEX_BASE,{anisotropy:Math.min(8,R.capabilities.getMaxAnisotropy()),renderer:R});
     const model=planner.root;
-    model.traverse(o=>{if(o.isMesh&&o.material&&!o.material.userData.keepEnv)o.material.envMapIntensity=o.material.metalness>.5?1.3:.32});
+    model.traverse(o=>{if(o.isMesh&&o.material&&!o.material.userData.keepEnv)o.material.envMapIntensity=o.material.metalness>.5?1.5:.62});
     const spin=new THREE.Group();spin.position.set(.48,0,0);model.position.set(-.48,0,0);spin.add(model);scene.add(spin);
     const dur=1;
     const cam=new THREE.PerspectiveCamera(38,1,.05,40);
