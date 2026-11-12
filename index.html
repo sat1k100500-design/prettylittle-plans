@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f2ebe1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PLANS">
+<meta name="description" content="PRETTYLITTLE PLANS by eng.girly — планер: день, тиждень, місяць, цілі, фінанси, трекери й нотатки.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e9acc1'/%3E%3Ctext x='32' y='44' text-anchor='middle' font-family='Georgia' font-size='34' fill='%235e0c2e'%3EP%3C/text%3E%3C/svg%3E">
+<style>[hidden]{display:none!important}img{max-width:100%}</style>
+<title>PRETTYLITTLE PLANS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Jost:wght@300;400;500;600&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Паперовий планер: вкладки місяців угорі, розділи внизу (телефон) або меню зліва (широкий екран). Свідомо одна світла тема, як у PDF. */
+:root{
+  --paper:#faf6f1; --card:#fffdfa; --blush:#f9e6ec; --sand:#f2ebe1; --line:#e2d3c8;
+  --rose:#e9acc1; --rose-ink:#c9809b; --wine:#5e0c2e; --ink:#3c0e18; --muted:#8a6d70; --faint:#c4b2ae;
+  --f-display:"Jost","Helvetica Neue",Arial,sans-serif;
+  --f-script:"Great Vibes","Segoe Script",cursive;
+  --f-body:"Manrope","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{background:var(--paper);color:var(--ink);min-height:100%}
+body{font-family:var(--f-body);font-size:14px;line-height:1.45;padding:0;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--wine);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* каркас */
+.app{min-height:100vh;display:flex;flex-direction:column}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.side{display:none}
+.content{flex:1;width:100%;max-width:760px;margin:0 auto;padding-bottom:84px}
+.months{display:grid;grid-template-columns:repeat(12,1fr);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.months button{border:0;padding:9px 0;font-size:9.5px;letter-spacing:.06em;font-weight:600;background:var(--sand);color:var(--ink);border-right:1px solid var(--paper)}
+.months button:nth-child(odd){background:#f3dbe3}
+.months button[aria-current="true"]{background:var(--wine);color:#fff}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--sand);z-index:10}
+
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--sand);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar button{border:0;background:transparent;padding:14px 0;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--ink);border-right:1px solid var(--paper)}
+.tabbar button[aria-current="page"]{background:var(--wine);color:#fff}
+
+/* заголовок сторінки */
+.page-head{padding-block:18px 4px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.page-head .tt{min-width:0;flex:1}
+.page-title{font-family:var(--f-display);font-weight:300;font-size:clamp(32px,9vw,54px);line-height:1;letter-spacing:.04em;text-transform:uppercase;color:var(--rose);margin:0;text-wrap:balance}
+.page-sub{font-family:var(--f-script);font-size:24px;color:var(--ink);margin-top:2px}
+.arrows{display:flex;gap:6px}
+.arrows button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--card);font-size:15px;color:var(--wine)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;padding-block:8px 2px}
+.tab{border:1px solid var(--line);background:var(--card);padding:6px 10px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;border-radius:3px}
+.tab[aria-pressed="true"]{background:var(--rose);border-color:var(--rose)}
+.tab.today{box-shadow:inset 0 -2px 0 var(--wine)}
+.days7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding-block:8px 2px}
+.days7 .tab{padding:6px 0;text-align:center;font-size:9.5px}
+
+/* блоки */
+.body{display:grid;gap:10px;padding-block:10px 18px}
+.grid2,.grid3,.split{display:grid;gap:10px}
+.col{display:grid;gap:10px;align-content:start;min-width:0}
+.box{background:var(--card);border:1px solid var(--line);padding:11px 12px 12px;min-width:0}
+.box.pink{background:var(--blush);border-color:transparent}
+.box.sand{background:var(--sand);border-color:transparent}
+.lbl{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.lbl::before{content:"";width:6px;height:6px;background:var(--rose);flex:none}
+.box.pink .lbl::before{background:var(--wine)}
+.lbl .aside{margin-left:auto;letter-spacing:.04em;font-weight:500;text-transform:none;color:var(--muted)}
+.lbl a,.lbl button.link{margin-left:auto}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ln{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;padding:6px 2px;font-size:14px;border-radius:0}
+.ln::placeholder,textarea::placeholder{color:var(--faint)}
+.ln:focus{outline:none;border-bottom-color:var(--rose-ink)}
+textarea.area{width:100%;min-height:90px;border:1px solid var(--line);background:var(--card);padding:8px;resize:vertical;font-size:14px;line-height:1.5}
+.sched{display:grid;grid-template-columns:46px 1fr;align-items:end;column-gap:6px}
+.sched span{font-size:11px;color:var(--muted);padding:7px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.num{font-family:var(--f-script);font-size:21px;color:var(--wine);width:20px;line-height:1}
+.prio{display:grid;grid-template-columns:20px 1fr;align-items:end;gap:6px}
+.item{display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:6px;border-bottom:1px solid var(--line);padding:2px 0;min-height:36px}
+.item.noc{grid-template-columns:1fr auto}
+.chk{appearance:none;width:17px;height:17px;border:1.5px solid var(--muted);border-radius:2px;margin:0;display:grid;place-items:center;background:var(--card);cursor:pointer}
+.chk:checked{background:var(--wine);border-color:var(--wine)}
+.chk:checked::after{content:"";width:8px;height:4px;border:2px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.item .t{border:0;background:transparent;padding:6px 0;font-size:14px;width:100%;min-width:0}
+.item.done .t{text-decoration:line-through;color:var(--muted)}
+.x{border:0;background:none;color:var(--faint);font-size:18px;line-height:1;padding:4px 6px;border-radius:3px}
+.x:hover{color:var(--wine)}
+.x.armed{color:#fff;background:var(--wine);font-size:11px;letter-spacing:.06em}
+.add{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.add > *{flex:1 1 120px;min-width:0}
+.add .btn{flex:0 0 auto}
+.btn{border:1px solid var(--wine);background:var(--wine);color:#fff;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 12px;border-radius:3px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--wine)}
+.btn.small{padding:5px 8px;font-size:10px}
+.field{border:1px solid var(--line);background:var(--card);padding:8px;border-radius:3px;width:100%;min-width:0;font-size:14px}
+.drops{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;justify-items:center}
+.drop{border:0;background:none;padding:0;width:26px;height:32px}
+.drop svg{width:100%;height:100%}
+.moods{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center}
+.mood{border:0;background:none;padding:2px;display:grid;justify-items:center;gap:4px;font-size:10px;color:var(--muted)}
+.face{width:34px;height:34px;border-radius:50%;border:2px solid transparent;display:grid;place-items:center}
+.face svg{width:20px;height:20px}
+.mood[aria-pressed="true"] .face{border-color:var(--wine)}
+.mood[aria-pressed="true"]{color:var(--ink);font-weight:700}
+.stars{display:flex;gap:4px}
+.star{border:0;background:none;padding:0;font-size:20px;color:#dcc6c3;line-height:1}
+.star.on{color:var(--rose-ink)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:end;font-size:11px;color:var(--muted)}
+.hint{font-size:12px;color:var(--muted)}
+.empty{font-size:12.5px;color:var(--muted);padding:8px 0}
+.link{border:0;background:none;color:var(--rose-ink);text-decoration:underline;padding:0;font-size:12px}
+.chipv{font-size:10px;letter-spacing:.06em;padding:2px 7px;border-radius:999px;background:var(--sand);color:var(--muted);white-space:nowrap}
+
+/* головна */
+.hello{font-family:var(--f-script);font-size:30px;color:var(--wine);line-height:1.1}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.tile{border:1px solid var(--line);background:var(--card);padding:12px;text-align:left;display:grid;gap:3px}
+.tile b{font-family:var(--f-display);font-weight:400;letter-spacing:.12em;text-transform:uppercase;font-size:13px}
+.tile span{font-size:11.5px;color:var(--muted)}
+.tile.pink{background:var(--blush);border-color:transparent}
+.affq{font-family:var(--f-script);font-size:26px;line-height:1.25;color:var(--wine);text-align:center;padding:6px 4px}
+.stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stat b{display:block;font-family:var(--f-display);font-weight:300;font-size:26px;color:var(--wine);font-variant-numeric:tabular-nums}
+.stat span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* місяць */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .dh{font-size:9px;letter-spacing:.14em;text-align:center;color:var(--muted);font-weight:700}
+.cday{border:1px solid var(--line);background:var(--card);min-height:58px;padding:4px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.cday .d{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.cday .m{width:9px;height:9px;border-radius:50%}
+.cday .tc{font-size:9.5px;color:var(--muted);margin-top:auto}
+.cday.today{border-color:var(--wine);box-shadow:inset 0 0 0 1px var(--wine)}
+.cday.out{visibility:hidden}
+.weeks{display:grid;gap:6px}
+.wk{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);background:var(--card);padding:10px 12px;text-align:left}
+.wk b{font-family:var(--f-display);font-weight:400;letter-spacing:.14em;text-transform:uppercase}
+
+/* тиждень */
+.wgrid{display:grid;grid-template-columns:1fr;gap:10px}
+.wday .lbl{cursor:pointer}
+.wday .date{font-family:var(--f-script);font-size:19px;color:var(--rose-ink);letter-spacing:0;text-transform:none;margin-left:auto}
+
+/* фінанси */
+.tblw{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:700;padding:5px 2px;border-bottom:1px solid var(--line)}
+.tbl td{padding:5px 2px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl input{width:78px;border:0;background:transparent;text-align:right;font-variant-numeric:tabular-nums;padding:3px}
+.tbl tr.total td{font-weight:700;border-bottom:0}
+.bar{height:4px;background:var(--sand);border-radius:2px;margin-top:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--rose)}
+.bar i.over{background:var(--wine)}
+.exp{display:grid;grid-template-columns:1fr auto auto;gap:2px 8px;padding:8px 0;border-bottom:1px solid var(--line);align-items:center}
+.exp .m{font-weight:600}
+.exp .c{grid-column:1/2;font-size:11.5px;color:var(--muted)}
+.exp .a{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.exp .x{grid-row:1/3;grid-column:3}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.form .full{grid-column:1/-1}
+.balance{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
+.balance div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0;font-size:13px}
+.balance b{font-variant-numeric:tabular-nums}
+.balance .neg b{color:var(--wine)}
+.piggy{display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+.coin{aspect-ratio:1;border-radius:50%;border:1.5px solid var(--rose-ink);background:transparent;padding:0;max-width:100%}
+.coin.on{background:var(--rose-ink)}
+.money{display:grid;grid-template-columns:1fr 92px auto;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:2px 0}
+.money input{border:0;background:transparent;padding:6px 2px;min-width:0}
+.money input.n{text-align:right;font-variant-numeric:tabular-nums}
+
+/* цілі */
+.goal{display:grid;gap:6px}
+.goal .top{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.goal .title{font-family:var(--f-display);font-size:18px;font-weight:400;border:0;background:transparent;border-bottom:1px solid var(--line);padding:4px 0;width:100%;min-width:0}
+.goal .meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:12px;color:var(--muted)}
+.goal .meta select,.goal .meta input{border:1px solid var(--line);background:var(--card);padding:3px 6px;border-radius:3px;font-size:12px}
+.prog{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.prog .bar{flex:1;height:6px;margin:0}
+.wish{display:grid;grid-template-columns:24px 1fr 86px auto;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:2px 0}
+.wish input.t,.wish input.n{border:0;background:transparent;padding:6px 2px;min-width:0}
+.wish input.n{text-align:right;font-variant-numeric:tabular-nums}
+.wish.done input.t{text-decoration:line-through;color:var(--muted)}
+
+/* нотатки */
+.notes{display:grid;gap:8px}
+.note{border:1px solid var(--line);background:var(--card);padding:10px 12px;text-align:left;display:grid;gap:3px}
+.note b{font-weight:700}
+.note span{font-size:12px;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.note small{font-size:10.5px;color:var(--faint)}
+.editor input.title{font-family:var(--f-display);font-size:22px;font-weight:400;border:0;border-bottom:1px solid var(--line);background:transparent;width:100%;padding:6px 0}
+.editor textarea{min-height:46vh}
+
+/* трекери */
+.hgrid-wrap{overflow-x:auto}
+.hgrid{border-collapse:collapse;font-size:11px}
+.hgrid th{font-weight:500;color:var(--muted);font-size:9px;padding:2px;min-width:22px;text-align:center;font-variant-numeric:tabular-nums}
+.hgrid th.h{min-width:150px;text-align:left;font-size:9px;letter-spacing:.14em;text-transform:uppercase}
+.hgrid td{border:1px solid var(--line);padding:0;text-align:center}
+.hgrid td.h{border:0;border-bottom:1px solid var(--line);padding:2px 6px 2px 0;text-align:left;white-space:nowrap}
+.hgrid td.h input{border:0;background:transparent;font-size:12.5px;width:110px;padding:4px 0}
+.hgrid td.h small{color:var(--muted);font-variant-numeric:tabular-nums;font-size:10px}
+.cell{width:22px;height:26px;border:0;background:transparent;padding:0;display:block}
+.cell.on{background:var(--rose)}
+.hgrid td.today{outline:1.5px solid var(--wine);outline-offset:-1px}
+.moodcal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;max-width:360px}
+.mc{aspect-ratio:1;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:10.5px;color:var(--muted);background:var(--card);padding:0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:11px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+
+.status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.status i{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.status.ok i{background:#7fa58a}.status.saving i{background:var(--rose-ink)}.status.local i{background:#d0a65a}
+.foot{padding-block:10px 4px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+/* ---------- широкий екран: сайт ---------- */
+@media (min-width:900px){
+  .app{flex-direction:row}
+  .side{display:flex;flex-direction:column;gap:18px;width:240px;flex:none;background:var(--sand);border-right:1px solid var(--line);padding:24px 18px;position:sticky;top:0;height:100vh;overflow:auto}
+  .tabbar{display:none}
+  .content{max-width:1180px;padding-bottom:32px}
+  .gut{padding-left:32px;padding-right:32px}
+  .logo{font-family:var(--f-display);font-weight:300;letter-spacing:.16em;line-height:1.05}
+  .logo b{display:block;font-size:13px;font-weight:500}
+  .logo span{display:block;font-size:36px;color:var(--rose)}
+  .logo em{font-family:var(--f-script);font-style:normal;font-size:20px;letter-spacing:0;color:var(--muted)}
+  .side nav{display:grid;gap:3px}
+  .side nav button{border:0;background:none;text-align:left;padding:9px 12px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;border-radius:3px}
+  .side nav button[aria-current="page"]{background:var(--wine);color:#fff}
+  .mini{background:var(--card);border:1px solid var(--line);padding:10px}
+  .mini .ttl{font-family:var(--f-script);font-size:21px;text-align:center;margin-bottom:4px}
+  .mini .g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:11px}
+  .mini .g b{font-size:8.5px;color:var(--muted)}
+  .mini .g button{border:0;background:none;padding:4px 0;border-radius:50%;font-variant-numeric:tabular-nums}
+  .mini .g button.sel{background:var(--wine);color:#fff}
+  .mini .g button.today:not(.sel){color:var(--rose-ink);font-weight:800}
+  .side .status{margin-top:auto;border-top:1px solid var(--line);padding-top:12px}
+  .foot{display:none}
+  .grid2{grid-template-columns:1fr 1fr;align-items:start}
+  .grid3{grid-template-columns:1.05fr 1fr 1fr;align-items:start}
+  .split{grid-template-columns:1.3fr 1fr;align-items:start}
+  .wgrid{grid-template-columns:repeat(4,1fr)}
+  .tiles{grid-template-columns:repeat(3,1fr)}
+  .cday{min-height:92px}
+  .notes{grid-template-columns:repeat(3,1fr)}
+}
+/* ---------- ГОЛОВНА: книга-планер у 3D ---------- */
+.content.bookmode{max-width:none;padding:0;margin:0}
+.content.bookmode .foot{display:none}
+.stage{position:relative;height:calc(100vh - 50px - env(safe-area-inset-bottom,0px));min-height:560px;overflow:hidden;perspective:2200px;touch-action:none;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(ellipse 70% 60% at 50% 45%,#fdf9f5 0%,#f1e8de 62%,#e6dacd 100%)}
+@media (min-width:900px){.stage{height:100vh}}
+.hintline{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;font-size:11px;letter-spacing:.06em;color:var(--muted);padding:0 16px;pointer-events:none;line-height:1.6}
+.scene{position:absolute;left:50%;top:47%;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+.scene.drag{transition:none}
+.book{position:relative;transform-style:preserve-3d;width:calc(var(--W) * 2);height:var(--H);margin-left:calc(var(--W) * -1);margin-top:calc(var(--H) / -2)}
+.shadow{position:absolute;left:calc(var(--W) - 10px);top:10px;width:calc(var(--W) + 30px);height:calc(var(--H) + 10px);background:rgba(60,14,24,.28);filter:blur(22px);transform:translateZ(-30px);transition:left 1.1s,width 1.1s;border-radius:8px}
+.book.open .shadow{left:-10px;width:calc(var(--W) * 2 + 30px)}
+.backcover{position:absolute;left:calc(var(--W) - 2px);top:-6px;width:calc(var(--W) + 8px);height:calc(var(--H) + 12px);border-radius:3px 9px 9px 3px;transform:translateZ(-14px);background:var(--cover)}
+.pg{position:absolute;top:0;width:var(--W);height:var(--H);background:linear-gradient(90deg,#efe6dc 0,var(--paper) 6%,var(--paper) 100%);overflow:visible}
+.pg.right{left:var(--W);transform:translateZ(0);border-radius:0 4px 4px 0;
+  box-shadow:1px 1px 0 #f3ece3,2px 2px 0 #ece3d8,3px 3px 0 #f3ece3,4px 4px 0 #e7ddd1,5px 5px 0 #f1e9df,6px 6px 0 #e1d6c9,0 0 0 1px #e9dfd3}
+.inner{position:absolute;inset:0;padding:calc(var(--W) * .07) calc(var(--W) * .075);display:flex;flex-direction:column;overflow:hidden;font-size:calc(var(--W) * .033)}
+.cover{position:absolute;left:var(--W);top:-4px;width:calc(var(--W) + 4px);height:calc(var(--H) + 8px);transform-origin:left center;transform-style:preserve-3d;transform:translateZ(12px) rotateY(0deg);transition:transform 1.15s cubic-bezier(.35,.55,.2,1)}
+.book.open .cover{transform:translateZ(4px) rotateY(-180deg)}
+.book.still .cover,.book.still .shadow{transition:none}
+.bface{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:3px 9px 9px 3px}
+.bface.front{background:var(--cover);cursor:pointer;overflow:hidden;box-shadow:inset 6px 0 10px -6px rgba(60,14,24,.4)}
+.bface.front::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.07) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(94,12,46,.05) 0 1px,transparent 1px 4px)}
+.bface.back{transform:rotateY(180deg);background:var(--cover);border-radius:9px 3px 3px 9px;padding:4px 0 4px 4px}
+.bface.back .paper{position:relative;height:100%;background:linear-gradient(270deg,#efe6dc 0,var(--paper) 6%,var(--paper) 100%);border-radius:4px 0 0 4px}
+.stripes{position:absolute;left:8%;top:0;bottom:0;width:15%;background:repeating-linear-gradient(90deg,rgba(255,255,255,.55) 0 3px,transparent 3px 9px)}
+.plate{position:absolute;left:24%;right:10%;top:17%;padding:calc(var(--W) * .07) calc(var(--W) * .05);background:var(--paper);border-radius:4px;text-align:center;box-shadow:0 1px 0 rgba(255,255,255,.6),0 6px 16px -10px rgba(60,14,24,.5);outline:1px solid var(--line);outline-offset:-6px}
+.plate .s1{font-family:var(--f-display);font-weight:400;letter-spacing:.32em;font-size:calc(var(--W) * .045);color:var(--ink)}
+.plate .s2{font-family:var(--f-display);font-weight:300;letter-spacing:.08em;font-size:calc(var(--W) * .16);line-height:.95;color:var(--rose-ink)}
+.plate .s3{font-family:var(--f-script);font-size:calc(var(--W) * .075);color:var(--ink);margin-top:4px}
+.plate .s4{font-size:calc(var(--W) * .03);letter-spacing:.3em;color:var(--muted);margin-top:calc(var(--W) * .04)}
+.plate .nm{margin-top:calc(var(--W) * .05);display:flex;gap:6px;align-items:flex-end;font-size:calc(var(--W) * .033);color:var(--muted);text-align:left}
+.plate .nm span:last-child{flex:1;border-bottom:1px solid var(--line);font-family:var(--f-script);font-size:calc(var(--W) * .06);color:var(--wine);min-height:1.2em}
+.strap{position:absolute;right:12%;top:0;bottom:0;width:calc(var(--W) * .035);background:linear-gradient(90deg,#4a0a24,#7a1a42 45%,#4a0a24);box-shadow:2px 0 4px rgba(60,14,24,.35)}
+.coverhint{position:absolute;left:24%;right:10%;bottom:9%;text-align:center;font-family:var(--f-script);font-size:calc(var(--W) * .07);color:var(--wine);opacity:.85}
+.ribbon{position:absolute;left:calc(var(--W) * 1.18);bottom:calc(var(--H) * -.09);width:calc(var(--W) * .05);height:calc(var(--H) * .12);background:var(--wine);clip-path:polygon(0 0,100% 0,100% 100%,50% 82%,0 100%);transform:translateZ(-2px)}
+/* кільця на корінці */
+.rings{position:absolute;left:var(--W);top:7%;bottom:7%;width:0;display:flex;flex-direction:column;justify-content:space-between;transform-style:preserve-3d;z-index:6;pointer-events:none}
+.ring{width:calc(var(--W) * .1);height:calc(var(--W) * .1);margin-left:calc(var(--W) * -.05);border-radius:50%;border:calc(var(--W) * .011) solid #c8b08a;box-shadow:inset 0 0 0 1px rgba(255,255,255,.65),0 0 0 1px rgba(120,90,50,.35);transform:translateZ(calc(var(--W) * .02)) rotateX(90deg)}
+/* брелок */
+.charm{position:absolute;left:var(--W);top:calc(var(--H) * -.02);width:0;height:0;transform:translateZ(16px);z-index:5}
+.charm .swingr{position:absolute;left:0;top:0;transform-origin:0 0;animation:idle 5s ease-in-out infinite}
+.charm .swingr.ring{animation:ring 2.4s cubic-bezier(.3,.6,.3,1)}
+.charm .cord{position:absolute;left:-1px;top:0;width:2px;height:calc(var(--H) * .14);background:linear-gradient(#7a1a42,#5e0c2e)}
+.charm button{position:absolute;left:calc(var(--W) * -.07);top:calc(var(--H) * .13);width:calc(var(--W) * .14);height:calc(var(--W) * .14);border:0;background:none;padding:0;cursor:pointer;filter:drop-shadow(0 3px 3px rgba(60,14,24,.35))}
+.charm svg{width:100%;height:100%}
+@keyframes idle{0%,100%{transform:rotate(3deg)}50%{transform:rotate(-3deg)}}
+@keyframes ring{0%{transform:rotate(0)}10%{transform:rotate(28deg)}25%{transform:rotate(-22deg)}40%{transform:rotate(15deg)}55%{transform:rotate(-9deg)}70%{transform:rotate(5deg)}85%{transform:rotate(-2deg)}100%{transform:rotate(0)}}
+/* вкладки місяців */
+.mtabs{position:absolute;left:100%;top:5%;bottom:5%;display:grid;grid-template-rows:repeat(12,1fr);gap:2px;width:calc(var(--W) * .075);transform:translateZ(-1px)}
+.mtabs button{border:0;border-radius:0 5px 5px 0;background:var(--sand);font-size:calc(var(--W) * .022);font-weight:700;letter-spacing:.04em;writing-mode:vertical-rl;text-orientation:mixed;padding:0;color:var(--ink);box-shadow:inset 2px 0 3px -2px rgba(60,14,24,.3)}
+.mtabs button:nth-child(odd){background:#f3cfdb}
+.mtabs button[aria-current="true"]{background:var(--wine);color:#fff;width:115%}
+/* сторінки */
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-bottom:calc(var(--W) * .025)}
+.ph h2{font-family:var(--f-display);font-weight:300;font-size:calc(var(--W) * .11);line-height:1;letter-spacing:.04em;text-transform:uppercase;color:var(--rose);margin:0}
+.ph .sc{font-family:var(--f-script);font-size:calc(var(--W) * .06);color:var(--ink)}
+.bl{font-size:calc(var(--W) * .024);letter-spacing:.22em;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:6px;margin:calc(var(--W) * .03) 0 calc(var(--W) * .012)}
+.bl::before{content:"";width:5px;height:5px;background:var(--rose)}
+.lp .item{min-height:0;grid-template-columns:18px 1fr auto;padding:0}
+.lp .item .t,.lp .ln{font-size:calc(var(--W) * .034);padding:calc(var(--W) * .012) 0}
+.lp .chk{width:14px;height:14px}
+.lp .add{margin-top:2px}
+.lp .x{font-size:15px;padding:2px 4px}
+.affb{margin-top:auto;font-family:var(--f-script);font-size:calc(var(--W) * .065);color:var(--wine);text-align:center;line-height:1.2;padding-top:6px}
+.bcal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;flex:1;grid-auto-rows:1fr}
+.bcal .dh{font-size:calc(var(--W) * .022);letter-spacing:.12em;text-align:center;color:var(--muted);font-weight:700;align-self:end}
+.bcell{border:1px solid var(--line);background:rgba(255,253,250,.7);padding:2px 3px;text-align:left;display:flex;flex-direction:column;gap:1px;min-width:0;overflow:hidden;cursor:pointer;font-size:calc(var(--W) * .026)}
+.bcell .d{font-weight:700;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:3px}
+.bcell .d i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.bcell .mm{color:var(--ink);line-height:1.15;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word;font-size:calc(var(--W) * .024)}
+.bcell.today{border-color:var(--wine);box-shadow:inset 0 0 0 1px var(--wine)}
+.bcell.sel{background:var(--blush)}
+.bcell.out{visibility:hidden}
+.edge{position:absolute;top:0;bottom:0;width:calc(var(--W) * .07);cursor:grab;z-index:3}
+.edge.r{right:0;background:linear-gradient(90deg,transparent,rgba(60,14,24,.04))}
+.edge.l{left:0;background:linear-gradient(270deg,transparent,rgba(60,14,24,.04))}
+.pop{position:absolute;left:8%;right:8%;bottom:6%;background:var(--card);border:1px solid var(--line);box-shadow:0 14px 30px -14px rgba(60,14,24,.5);padding:10px;z-index:6;display:grid;gap:8px;font-size:13px}
+.pop .pt{font-family:var(--f-script);font-size:22px;color:var(--wine)}
+.pop textarea{width:100%;min-height:70px;border:1px solid var(--line);padding:6px;font-size:14px;resize:none;background:var(--paper)}
+.pop .pm{display:flex;gap:6px}
+.pop .pm button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:0}
+.pop .pm button[aria-pressed="true"]{border-color:var(--wine)}
+.pop .pr{display:flex;gap:6px;justify-content:space-between;flex-wrap:wrap}
+/* листок, що перегортається */
+.leaf{position:absolute;left:var(--W);top:0;width:var(--W);height:var(--H);transform-origin:left center;transform-style:preserve-3d;z-index:4;pointer-events:none;transform:translateZ(2px)}
+.leaf .lf{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--paper);overflow:hidden}
+.leaf .lf.b{transform:rotateY(180deg)}
+.leaf.go-next{animation:leafN .75s cubic-bezier(.45,.1,.3,1) forwards}
+.leaf.go-prev{animation:leafP .75s cubic-bezier(.45,.1,.3,1) forwards}
+@keyframes leafN{from{transform:translateZ(2px) rotateY(0)}to{transform:translateZ(2px) rotateY(-180deg)}}
+@keyframes leafP{from{transform:translateZ(2px) rotateY(-180deg)}to{transform:translateZ(2px) rotateY(0)}}
+/* наліпки */
+.stks{position:absolute;inset:0;pointer-events:none;z-index:2}
+.stk{position:absolute;width:calc(var(--W) * var(--s,.17));transform:translate(-50%,-50%) rotate(var(--r,0deg));pointer-events:auto;cursor:grab;filter:drop-shadow(0 1px 1px rgba(60,14,24,.25));touch-action:none}
+.stk.tape{width:calc(var(--W) * .34);opacity:.88}
+.stk.lift{filter:drop-shadow(0 10px 8px rgba(60,14,24,.3));cursor:grabbing}
+.stk svg,.tray svg{display:block;width:100%;height:auto}
+.ghost{position:fixed;z-index:50;width:64px;pointer-events:none;transform:translate(-50%,-50%) rotate(-6deg) scale(1.1);filter:drop-shadow(0 10px 8px rgba(60,14,24,.3))}
+.ghost.tape{width:120px}
+.tray{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:56px;width:210px;max-height:calc(100% - 140px);overflow:auto;background:rgba(255,253,250,.94);border:1px solid var(--line);padding:10px;z-index:8;box-shadow:0 18px 40px -24px rgba(60,14,24,.45)}
+.tray .tt{font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between}
+.tray .g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-items:center}
+.tray .it{border:0;background:none;padding:2px;cursor:grab;touch-action:none}
+.tray .it.tape{grid-column:span 3}
+.tray .note2{font-size:11px;color:var(--muted);margin-top:8px}
+@media (max-width:700px){.tray{left:12px;right:12px;width:auto;top:auto;bottom:118px;max-height:42%}.tray .g{grid-template-columns:repeat(5,1fr)}.tray .it.tape{grid-column:span 5}}
+.bui{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:0 12px;z-index:9}
+.bui button{border:0;padding:10px 16px;border-radius:999px;background:var(--wine);color:#fff;font-size:12px;letter-spacing:.06em;font-weight:600;box-shadow:0 6px 14px -6px rgba(60,14,24,.55)}
+.bui button.sec{background:var(--card);color:var(--wine);border:1px solid var(--line)}
+@media (max-width:899px){.bui{bottom:calc(64px + env(safe-area-inset-bottom,0px))}}
+.bstatus{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:9}
+@media (max-width:899px){.bstatus{display:none}}
+@media (prefers-reduced-motion:reduce){.cover,.scene,.shadow{transition:none}.charm .swingr{animation:none}.leaf{display:none}}
+@media (prefers-reduced-motion:no-preference){.view{animation:fade .22s ease-out}@keyframes fade{from{opacity:.5;transform:translateY(3px)}to{opacity:1;transform:none}}}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side" aria-label="Меню"></aside>
+  <div class="main">
+    <div class="months" id="months" hidden></div>
+    <main class="content gut" id="view" aria-live="polite"></main>
+  </div>
+  <nav class="tabbar" id="tabbar" aria-label="Розділи"></nav>
+</div>
+
+<script>
+(function(){
+/* ======================= довідники ======================= */
+const DAYS=['Понеділок','Вівторок','Середа','Четвер','П’ятниця','Субота','Неділя'];
+const DSH=['ПН','ВТ','СР','ЧТ','ПТ','СБ','НД'];
+const MON=['січень','лютий','березень','квітень','травень','червень','липень','серпень','вересень','жовтень','листопад','грудень'];
+const MONG=['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+const MSH=['СІЧ','ЛЮТ','БЕР','КВІ','ТРА','ЧЕР','ЛИП','СЕР','ВЕР','ЖОВ','ЛИС','ГРУ'];
+const CATS=['Житло та комуналка','Продукти','Кафе та ресторани','Транспорт','Краса та догляд','Одяг','Здоров’я','Дім і побут','Зв’язок і підписки','Розваги','Подарунки','Навчання','Подорожі','Інше'];
+const MOODS=[['Чудово','#eba9bf','M7 13c1.4 2 3.2 3 5 3s3.6-1 5-3'],['Добре','#f3c9d6','M8 13.5c1.2 1.3 2.6 2 4 2s2.8-.7 4-2'],['Нормально','#ecdcd0','M8 14.5h8'],['Втомлена','#c79aa3','M8 15.5c1.2-1 2.6-1.5 4-1.5s2.8.5 4 1.5'],['Сумно','#9a7179','M7 16.5c1.4-1.8 3.2-2.7 5-2.7s3.6.9 5 2.7']];
+const HABITS=['Вода 2 літри','Сон 8 годин','Спорт','Читання','Без цукру','Догляд за шкірою','Прогулянка','Медитація'];
+const SPHERES=['Здоров’я','Кар’єра','Фінанси','Стосунки','Саморозвиток','Подорожі','Дім','Хобі'];
+const NAV=[['book','Головна'],['home','Огляд'],['day','Сьогодні'],['week','Тиждень'],['month','Місяць'],['trackers','Трекери'],['goals','Цілі'],['finance','Фінанси'],['notes','Нотатки']];
+const TABBAR=[['book','Головна'],['month','Місяць'],['goals','Цілі'],['finance','Фінанси'],['notes','Нотатки']];
+const TABOF={book:'book',home:'book',day:'month',week:'month',month:'month',trackers:'month',goals:'goals',finance:'finance',notes:'notes',settings:'book'};
+
+/* ======================= дати ======================= */
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const ym=d=>d.getFullYear()+'-'+pad(d.getMonth()+1);
+const wd=d=>(d.getDay()+6)%7;
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const monday=d=>addDays(d,-wd(d));
+const dim=d=>new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+const weekOfMonth=d=>Math.floor((d.getDate()-1+wd(new Date(d.getFullYear(),d.getMonth(),1)))/7)+1;
+const parseD=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const money=n=>(Math.round(n)||0).toLocaleString('uk-UA')+' ₴';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const today=()=>{const t=new Date();t.setHours(0,0,0,0);return t};
+
+/* ======================= сховище ======================= */
+/* Кожен розділ — окремий документ. З акаунтом: data/users/<id>/<ключ> (бачить лише власник записів),
+   інакше — у браузері. Записи відкладаються на мить і йдуть по одному на документ. */
+const LKEY='plp-app-v1';
+const store={docs:{},dirty:new Set(),inflight:new Set(),coll:null,mode:'loading',timer:null};
+function blank(key){
+  const p=key.split('-')[0];
+  if(p==='day')return{sched:{},top:['','',''],tasks:[],water:0,mood:null,grat:['','',''],sleep:{bed:'',wake:'',q:0},sport:{what:'',min:''},food:{b:'',l:'',d:'',s:''},aff:'',note:''};
+  if(p==='week')return{prio:['','','',''],note:''};
+  if(p==='month')return{goals:[],dates:[],focus:'',newh:'',avoid:''};
+  if(p==='fin')return{plan:{},exp:[],inc:[],pay:[],piggy:0,coin:500};
+  if(p==='hab'){const prev=Object.keys(store.docs).filter(k=>k.startsWith('hab-')&&k<key).sort().pop();return{names:(prev?store.docs[prev].names:HABITS).slice(),marks:{}}}
+  if(key==='goals'||key==='wish'||key==='notes'||key==='stickers')return{items:[]};
+  if(key==='aff')return{items:['Я дозволяю собі рухатися у своєму темпі.','Я гідна всього, про що мрію.','Кожен день — це новий шанс.']};
+  if(key==='settings')return{name:''};
+  return{};
+}
+function doc(key){return store.docs[key]||(store.docs[key]=blank(key))}
+function peek(key){return store.docs[key]}
+function touch(key){store.dirty.add(key);status('saving');clearTimeout(store.timer);store.timer=setTimeout(flush,600)}
+async function flush(){
+  if(store.mode==='loading'){clearTimeout(store.timer);store.timer=setTimeout(flush,800);return}
+  if(store.mode!=='cloud'){try{localStorage.setItem(LKEY,JSON.stringify(store.docs))}catch(e){}store.dirty.clear();status(store.mode);return}
+  const keys=[...store.dirty];store.dirty.clear();
+  for(const k of keys){
+    if(store.inflight.has(k)){store.dirty.add(k);continue}
+    store.inflight.add(k);
+    try{await store.coll.doc(k).set(JSON.parse(JSON.stringify(store.docs[k])))}
+    catch(e){
+      if(e&&e.code==='unavailable'){store.dirty.add(k)}
+      else if(e&&e.code==='quota_exceeded'){toast('Сховище заповнене: видали старі нотатки або витрати.')}
+      else{goLocal('Не вдалося зберегти в акаунт — записи тимчасово зберігаються в цьому браузері.')}
+    }finally{store.inflight.delete(k)}
+  }
+  if(store.dirty.size){clearTimeout(store.timer);store.timer=setTimeout(flush,1500)}else status('ok');
+}
+function goLocal(msg){store.mode='local';try{localStorage.setItem(LKEY,JSON.stringify(store.docs))}catch(e){}status('local');if(msg)toast(msg)}
+function loadLocal(){try{const r=localStorage.getItem(LKEY);if(r)Object.assign(store.docs,JSON.parse(r))}catch(e){}}
+
+let typing=false,pendingRender=false;
+function remote(snap){
+  let changed=false;
+  snap.docChanges().forEach(ch=>{const k=ch.doc.id;if(store.dirty.has(k)||store.inflight.has(k))return;
+    if(ch.type==='removed'){delete store.docs[k]}else{store.docs[k]=JSON.parse(JSON.stringify(ch.doc.data()))}changed=true});
+  if(!snap.metadata.fromCache&&store.mode==='loading'){
+    store.mode='cloud';status('ok');changed=true;
+    // перший вхід з акаунтом: переносимо те, що вже було записано в цьому браузері
+    if(snap.empty&&store.localCopy&&Object.keys(store.localCopy).length){Object.assign(store.docs,store.localCopy);Object.keys(store.localCopy).forEach(k=>store.dirty.add(k));flush();toast('Записи з цього браузера перенесено в акаунт.')}
+    else if(store.dirty.size)flush();
+  }
+  if(changed){if(typing)pendingRender=true;else render()}
+}
+async function connect(){
+  loadLocal();
+  const cl=window.claude;
+  let db=null,user=null;
+  try{[db,user]=await Promise.all([cl?.use?cl.use('db'):null,cl?.use?cl.use('user'):null])}catch(e){}
+  const id=user?await user.id():null;
+  if(!db||!id){store.mode='local';status('local');render();return}
+  let localCopy=store.docs;store.localCopy=localCopy;store.docs={};store.mode='loading';status('loading');
+  store.coll=db.collection('data/users/'+id);
+  const timer=setTimeout(()=>{if(store.mode==='loading'){store.docs=Object.keys(store.docs).length?store.docs:localCopy;store.mode='local';status('local');toast('Не вдалося дістатися до акаунта — поки що записи зберігаються в цьому браузері.');render()}},10000);
+  store.coll.onSnapshot(s=>{clearTimeout(timer);remote(s)},e=>{clearTimeout(timer);store.docs=Object.keys(store.docs).length?store.docs:localCopy;goLocal('Синхронізація зупинилася — записи зберігаються в цьому браузері.');render()});
+}
+
+/* ======================= стан екрана ======================= */
+let cur=today();
+let view=(location.hash||'#book').slice(1);if(!NAV.some(v=>v[0]===view)&&view!=='settings')view='book';
+let sub={goals:'goals',finance:'month',month:'cal'};
+let noteOpen=null,noteQ='';
+
+const $=s=>document.querySelector(s);
+function keyOf(scope){return{day:'day-'+iso(cur),week:'week-'+iso(monday(cur)),month:'month-'+ym(cur),fin:'fin-'+ym(cur),hab:'hab-'+ym(cur)}[scope]||scope}
+function resolve(ref){const i=ref.indexOf(':');return[keyOf(ref.slice(0,i)),ref.slice(i+1)]}
+function getP(o,path){return path.split('.').reduce((a,k)=>a==null?a:a[k],o)}
+function setP(o,path,v){const ks=path.split('.');let x=o;for(let i=0;i<ks.length-1;i++){if(x[ks[i]]==null)x[ks[i]]=/^\d+$/.test(ks[i+1])?[]:{};x=x[ks[i]]}x[ks.at(-1)]=v}
+function val(ref){const[k,p]=resolve(ref);return getP(doc(k),p)}
+function put(ref,v){const[k,p]=resolve(ref);setP(doc(k),p,v);touch(k)}
+const inp=(ref,ph='',cls='ln',extra='')=>`<input class="${cls}" data-k="${ref}" value="${esc(val(ref))}" placeholder="${esc(ph)}" aria-label="${esc(ph||ref)}" ${extra}>`;
+
+/* ======================= каркас ======================= */
+function shell(){
+  const showMonths=['month','finance','trackers'].includes(view);
+  $('#months').hidden=!showMonths;
+  if(showMonths)$('#months').innerHTML=MSH.map((m,i)=>`<button data-month="${i}" aria-current="${i===cur.getMonth()}" aria-label="${MON[i]}">${m}</button>`).join('');
+  $('#tabbar').innerHTML=TABBAR.map(([k,t])=>`<button data-go="${k}" aria-current="${TABOF[view]===k?'page':'false'}">${t}</button>`).join('');
+  const f=new Date(cur.getFullYear(),cur.getMonth(),1),T=iso(today());
+  let g=DSH.map(d=>`<b>${d}</b>`).join('')+'<span></span>'.repeat(wd(f));
+  for(let i=1;i<=dim(cur);i++){const k=iso(new Date(cur.getFullYear(),cur.getMonth(),i));g+=`<button data-date="${k}" data-go="day" class="${k===iso(cur)?'sel':''} ${k===T?'today':''}" aria-label="${i} ${MONG[cur.getMonth()]}">${i}</button>`}
+  $('#side').innerHTML=`<div class="logo"><b>PRETTYLITTLE</b><span>PLANS</span><em>by eng.girly</em></div>
+   <nav aria-label="Розділи">${NAV.map(([k,t])=>`<button data-go="${k}" aria-current="${view===k?'page':'false'}">${t}</button>`).join('')}</nav>
+   <div class="mini"><div class="ttl">${MON[cur.getMonth()]} ${cur.getFullYear()}</div><div class="g">${g}</div></div>
+   <div class="status" id="st1"><i></i><span></span></div>`;
+  status();
+}
+function head(title,subtitle,opts={}){
+  return `<div class="page-head"><div class="tt"><h1 class="page-title">${title}</h1><div class="page-sub">${subtitle}</div></div>${opts.arrows?`<div class="arrows"><button data-step="-1" aria-label="Назад">←</button><button data-step="1" aria-label="Вперед">→</button></div>`:''}${opts.extra||''}</div>`;
+}
+const tabs=(list,active,attr)=>`<div class="tabs" role="group">${list.map(([k,t])=>`<button class="tab" ${attr}="${k}" aria-pressed="${k===active}">${t}</button>`).join('')}</div>`;
+const del=(attr,label='Видалити')=>`<button class="x" ${attr} aria-label="${label}">×</button>`;
+const face=i=>`<svg viewBox="0 0 24 24"><circle cx="9" cy="10" r="1.2" fill="#3c0e18"/><circle cx="15" cy="10" r="1.2" fill="#3c0e18"/><path d="${MOODS[i][2]}" fill="none" stroke="#3c0e18" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+
+/* ======================= ГОЛОВНА ======================= */
+function vHome(){
+  const T=today(),d=peek('day-'+iso(T))||blank('day'),s=doc('settings'),aff=doc('aff').items.filter(Boolean);
+  const affToday=aff.length?aff[(T.getDate()+T.getMonth()*31)%aff.length]:'';
+  const done=d.tasks.filter(t=>t.done).length;
+  const g=doc('goals').items,gd=g.filter(x=>x.steps?.length&&x.steps.every(st=>st.done)).length;
+  const f=peek('fin-'+ym(T)),spent=f?f.exp.reduce((a,e)=>a+ +e.amt,0):0;
+  const hi=s.name?`Привіт, ${esc(s.name)}`:'Привіт!';
+  return head('Мій планер',`${T.getDate()} ${MONG[T.getMonth()]} · ${DAYS[wd(T)].toLowerCase()}`)+`<div class="body">
+   <div class="grid2">
+    <div class="col">
+     <div class="box pink"><div class="hello">${hi}</div><div class="hint" style="margin-top:4px">${d.tasks.length?`Сьогодні ${done} з ${d.tasks.length} завдань виконано.`:'На сьогодні ще нічого не заплановано.'}</div>
+      <div class="add" style="margin-top:10px"><button class="btn" data-go="day" data-date="${iso(T)}">Відкрити сьогодні</button><button class="btn ghost" data-go="week" data-date="${iso(T)}">Тиждень</button></div></div>
+     <div class="box"><div class="lbl">Топ-3 на сьогодні<button class="link" data-go="day" data-date="${iso(T)}">змінити</button></div>
+      ${d.top.some(Boolean)?d.top.map((t,i)=>t?`<div class="prio" style="padding:4px 0"><span class="num">${i+1}</span><span>${esc(t)}</span></div>`:'').join(''):'<div class="empty">Додай три головні справи на сторінці «Сьогодні».</div>'}</div>
+     <div class="box sand"><div class="stat3"><div class="stat"><b>${d.water}/8</b><span>вода</span></div><div class="stat"><b>${money(spent).replace(' ₴','')}</b><span>₴ за місяць</span></div><div class="stat"><b>${gd}/${g.length}</b><span>цілей</span></div></div></div>
+    </div>
+    <div class="col">
+     ${affToday?`<div class="box"><div class="lbl">Афірмація дня</div><div class="affq">${esc(affToday)}</div></div>`:''}
+     <div class="tiles">
+      <button class="tile pink" data-go="month"><b>Місяць</b><span>календар і важливі дати</span></button>
+      <button class="tile" data-go="trackers"><b>Трекери</b><span>звички й настрій</span></button>
+      <button class="tile" data-go="goals"><b>Цілі</b><span>мрії, кроки, вішліст</span></button>
+      <button class="tile pink" data-go="finance"><b>Фінанси</b><span>витрати й бюджет</span></button>
+      <button class="tile pink" data-go="notes"><b>Нотатки</b><span>мої думки</span></button>
+      <button class="tile" data-go="settings"><b>Налаштування</b><span>ім’я і збереження</span></button>
+     </div>
+    </div>
+   </div></div>`;
+}
+
+/* ======================= ДЕНЬ ======================= */
+function vDay(){
+  const d=doc(keyOf('day')),m=monday(cur),T=iso(today());
+  const chips=DSH.map((s,i)=>{const dd=addDays(m,i);return `<button class="tab ${iso(dd)===T?'today':''}" data-date="${iso(dd)}" aria-pressed="${iso(dd)===iso(cur)}">${s}<br>${dd.getDate()}</button>`}).join('');
+  const hours=[];for(let h=6;h<=23;h++)hours.push(`<span>${pad(h)}:00</span>${inp('day:sched.'+pad(h),'')}`);
+  const tasks=d.tasks.map((t,i)=>`<div class="item ${t.done?'done':''}"><input type="checkbox" class="chk" data-chk="day:tasks.${i}.done" ${t.done?'checked':''} aria-label="Виконано"><input class="t" data-k="day:tasks.${i}.t" value="${esc(t.t)}" aria-label="Завдання">${del(`data-del="day:tasks.${i}"`)}</div>`).join('');
+  const drops=Array.from({length:8},(_,i)=>`<button class="drop" data-water="${i+1}" aria-label="Склянка ${i+1}"><svg viewBox="0 0 24 30"><path d="M12 2C9 8 4 13 4 19a8 8 0 0 0 16 0c0-6-5-11-8-17z" fill="${i<d.water?'#e9acc1':'none'}" stroke="#c9809b" stroke-width="1.6"/></svg></button>`).join('');
+  const moods=MOODS.map(([n,c],i)=>`<button class="mood" data-mood="${i}" aria-pressed="${d.mood===i}"><span class="face" style="background:${c}">${face(i)}</span>${n}</button>`).join('');
+  const stars=[1,2,3,4,5].map(i=>`<button class="star ${i<=d.sleep.q?'on':''}" data-star="${i}" aria-label="Якість сну ${i} з 5">★</button>`).join('');
+  return head(DAYS[wd(cur)],`тиждень ${weekOfMonth(cur)} · ${cur.getDate()} ${MONG[cur.getMonth()]}`,{arrows:true})+`<div class="days7">${chips}</div>
+  <div class="body grid3">
+   <div class="col">
+    <div class="box pink"><div class="lbl">Топ-3 пріоритети</div>${[0,1,2].map(i=>`<div class="prio"><span class="num">${i+1}</span>${inp('day:top.'+i,'')}</div>`).join('')}</div>
+    <div class="box"><div class="lbl">Завдання<span class="aside">${d.tasks.filter(t=>t.done).length} з ${d.tasks.length}</span></div>${tasks||'<div class="empty">Ще немає завдань.</div>'}
+     <form class="add" data-add="day:tasks" data-tpl="task"><input class="ln" name="t" placeholder="Нове завдання" aria-label="Нове завдання"><button class="btn">Додати</button></form></div>
+    <div class="box pink"><div class="lbl">Вода<span class="aside">${d.water} з 8 склянок</span></div><div class="drops">${drops}</div></div>
+    <div class="box"><div class="lbl">Розклад</div><div class="sched">${hours.join('')}</div></div>
+   </div>
+   <div class="col">
+    <div class="box sand"><div class="lbl">Настрій</div><div class="moods">${moods}</div></div>
+    <div class="box pink"><div class="lbl">Я вдячна за…</div>${[0,1,2].map(i=>`<div class="prio"><span style="color:var(--rose-ink)">♥</span>${inp('day:grat.'+i,'')}</div>`).join('')}</div>
+    <div class="row2">
+     <div class="box"><div class="lbl">Сон</div><div class="kv"><span>Лягла</span>${inp('day:sleep.bed','23:00','ln','inputmode="numeric"')}<span>Встала</span>${inp('day:sleep.wake','07:00','ln','inputmode="numeric"')}</div><div class="stars" style="margin-top:8px">${stars}</div></div>
+     <div class="box"><div class="lbl">Спорт</div><div class="kv"><span>Що</span>${inp('day:sport.what','')}<span>Хвилин</span>${inp('day:sport.min','','ln','inputmode="numeric"')}</div></div>
+    </div>
+   </div>
+   <div class="col">
+    <div class="box sand"><div class="lbl">Харчування</div><div class="kv"><span>Сніданок</span>${inp('day:food.b','')}<span>Обід</span>${inp('day:food.l','')}<span>Вечеря</span>${inp('day:food.d','')}<span>Перекус</span>${inp('day:food.s','')}</div></div>
+    <div class="box"><div class="lbl">Афірмація дня</div>${inp('day:aff','Напиши собі щось добре')}</div>
+    <div class="box"><div class="lbl">Нотатки дня</div><textarea class="area" data-k="day:note" placeholder="Думки, ідеї, що запам’ятати" aria-label="Нотатки дня">${esc(d.note)}</textarea></div>
+   </div>
+  </div>`;
+}
+
+/* ======================= ТИЖДЕНЬ ======================= */
+function vWeek(){
+  const m=monday(cur),T=iso(today());let done=0,all=0,wat=0,wn=0;
+  const cards=DAYS.map((n,i)=>{const dd=addDays(m,i),k='day-'+iso(dd),x=peek(k)||blank('day');all+=x.tasks.length;done+=x.tasks.filter(t=>t.done).length;if(x.water){wat+=x.water;wn++}
+    const list=x.tasks.map((t,j)=>`<div class="item ${t.done?'done':''}"><input type="checkbox" class="chk" data-chk="${k}:tasks.${j}.done" ${t.done?'checked':''} aria-label="Виконано"><input class="t" data-k="${k}:tasks.${j}.t" value="${esc(t.t)}" aria-label="Завдання">${del(`data-del="${k}:tasks.${j}"`)}</div>`).join('');
+    return `<div class="box wday" ${iso(dd)===T?'style="border-color:var(--rose-ink)"':''}><div class="lbl" data-date="${iso(dd)}" data-go="day" role="button" tabindex="0">${n} →<span class="date">${dd.getDate()}</span></div>${list}
+     <form class="add" data-add="${k}:tasks" data-tpl="task"><input class="ln" name="t" placeholder="+ завдання" aria-label="Завдання на ${n.toLowerCase()}"></form></div>`}).join('');
+  const e=addDays(m,6);
+  return head('Тиждень '+weekOfMonth(cur),`${m.getDate()} ${MONG[m.getMonth()]} — ${e.getDate()} ${MONG[e.getMonth()]}`,{arrows:true})+`<div class="body">
+   <div class="box sand"><div class="stat3"><div class="stat"><b>${done}/${all}</b><span>завдань</span></div><div class="stat"><b>${wn?(wat/wn).toFixed(1):'–'}</b><span>склянок/день</span></div><div class="stat"><b>${all?Math.round(done/all*100):0}%</b><span>виконано</span></div></div></div>
+   <div class="wgrid">${cards}
+    <div class="box pink"><div class="lbl">Пріоритети тижня</div>${[0,1,2,3].map(i=>`<div class="prio"><span class="num">${i+1}</span>${inp('week:prio.'+i,'')}</div>`).join('')}
+     <div class="lbl" style="margin-top:12px">Нотатки тижня</div><textarea class="area" data-k="week:note" aria-label="Нотатки тижня" style="min-height:70px">${esc(doc(keyOf('week')).note)}</textarea></div>
+   </div></div>`;
+}
+
+/* ======================= МІСЯЦЬ ======================= */
+function vMonth(){
+  const s=sub.month,mo=doc(keyOf('month')),f=new Date(cur.getFullYear(),cur.getMonth(),1),n=dim(cur),T=iso(today());
+  let body='';
+  if(s==='cal'){
+    let cells=DSH.map(d=>`<div class="dh">${d}</div>`).join('')+'<div class="cday out"></div>'.repeat(wd(f));
+    for(let i=1;i<=n;i++){const dd=new Date(cur.getFullYear(),cur.getMonth(),i),k='day-'+iso(dd),x=peek(k);
+      const dot=x&&x.mood!=null?`<span class="m" style="background:${MOODS[x.mood][1]}"></span>`:'';
+      const tc=x&&x.tasks.length?`<span class="tc">${x.tasks.filter(t=>t.done).length}/${x.tasks.length}</span>`:'';
+      cells+=`<button class="cday ${iso(dd)===T?'today':''}" data-date="${iso(dd)}" data-go="day" aria-label="${i} ${MONG[cur.getMonth()]}"><span class="d">${i}</span>${dot}${tc}</button>`}
+    const goals=mo.goals.map((g,i)=>`<div class="item ${g.done?'done':''}"><input type="checkbox" class="chk" data-chk="month:goals.${i}.done" ${g.done?'checked':''} aria-label="Виконано"><input class="t" data-k="month:goals.${i}.t" value="${esc(g.t)}" aria-label="Ціль місяця">${del(`data-del="month:goals.${i}"`)}</div>`).join('');
+    const dates=mo.dates.map((x,i)=>`<div class="item"><span class="num" style="font-size:18px;width:auto">${esc(x.d)}</span><input class="t" data-k="month:dates.${i}.t" value="${esc(x.t)}" aria-label="Подія">${del(`data-del="month:dates.${i}"`)}</div>`).join('');
+    body=`<div class="split"><div class="box"><div class="cal">${cells}</div><div class="legend">${MOODS.map(([nm,c])=>`<span><i style="background:${c}"></i>${nm}</span>`).join('')}</div></div>
+     <div class="col">
+      <div class="box pink"><div class="lbl">Цілі місяця</div>${goals||'<div class="empty">Що хочеш встигнути цього місяця?</div>'}<form class="add" data-add="month:goals" data-tpl="task"><input class="ln" name="t" placeholder="Нова ціль" aria-label="Нова ціль місяця"><button class="btn">Додати</button></form></div>
+      <div class="box"><div class="lbl">Важливі дати</div>${dates||'<div class="empty">Дні народження, дедлайни, поїздки.</div>'}<form class="add" data-add="month:dates" data-tpl="date"><input class="ln" name="d" placeholder="День" aria-label="День місяця" inputmode="numeric" style="flex:0 0 60px"><input class="ln" name="t" placeholder="Що" aria-label="Подія"><button class="btn">Додати</button></form></div>
+      <div class="box sand"><div class="lbl">Фокус</div>${inp('month:focus','На чому зосередитись')}<div class="lbl" style="margin-top:12px">Нові звички</div>${inp('month:newh','')}<div class="lbl" style="margin-top:12px">Уникати</div>${inp('month:avoid','')}</div>
+     </div></div>`;
+  }else{
+    const weeks=[];let w=monday(f);while(w<=new Date(cur.getFullYear(),cur.getMonth(),n)){weeks.push(new Date(w));w=addDays(w,7)}
+    body=`<div class="weeks">${weeks.map((w,i)=>{const e=addDays(w,6);let a=0,dn=0;for(let j=0;j<7;j++){const x=peek('day-'+iso(addDays(w,j)));if(x){a+=x.tasks.length;dn+=x.tasks.filter(t=>t.done).length}}
+      return `<button class="wk" data-date="${iso(w<f?f:w)}" data-go="week"><b>Тиждень ${i+1}</b><span class="hint">${w.getDate()} ${MONG[w.getMonth()]} — ${e.getDate()} ${MONG[e.getMonth()]} · ${dn}/${a}</span></button>`}).join('')}</div>`;
+  }
+  return head('Місяць',`${MON[cur.getMonth()]} ${cur.getFullYear()}`,{arrows:true})+tabs([['cal','Календар'],['weeks','Тижні'],['trk','Трекери →'],['fin','Фінанси →']],s,'data-msub')+`<div class="body">${body}</div>`;
+}
+
+/* ======================= ТРЕКЕРИ ======================= */
+function vTrackers(){
+  const h=doc(keyOf('hab')),n=dim(cur),T=today(),isCur=ym(cur)===ym(T),last=isCur?T.getDate():(cur<T?n:0);
+  const headRow=`<tr><th class="h">Звичка</th>${Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join('')}<th></th></tr>`;
+  const rows=h.names.map((name,hi)=>{let cnt=0,streak=0;for(let i=1;i<=last;i++)if(h.marks[hi+'|'+i])cnt++;for(let i=last;i>=1&&h.marks[hi+'|'+i];i--)streak++;
+    return `<tr><td class="h"><input data-k="hab:names.${hi}" value="${esc(name)}" aria-label="Назва звички"><br><small>${last?Math.round(cnt/last*100):0}% · серія ${streak}</small></td>${Array.from({length:n},(_,i)=>`<td class="${isCur&&i+1===T.getDate()?'today':''}"><button class="cell ${h.marks[hi+'|'+(i+1)]?'on':''}" data-hab="${hi}|${i+1}" aria-label="${esc(name)}, ${i+1}" aria-pressed="${!!h.marks[hi+'|'+(i+1)]}"></button></td>`).join('')}<td style="border:0">${del(`data-delhab="${hi}"`,'Видалити звичку')}</td></tr>`}).join('');
+  const f=new Date(cur.getFullYear(),cur.getMonth(),1);
+  const mc='<span></span>'.repeat(wd(f))+Array.from({length:n},(_,i)=>{const k=iso(new Date(cur.getFullYear(),cur.getMonth(),i+1)),x=peek('day-'+k),c=x&&x.mood!=null?MOODS[x.mood][1]:'';
+    return `<button class="mc" data-date="${k}" data-go="day" style="${c?`background:${c};border-color:${c};color:var(--ink)`:''}" aria-label="${i+1} ${MONG[cur.getMonth()]}">${i+1}</button>`}).join('');
+  const cnt=MOODS.map((_,i)=>Object.entries(store.docs).filter(([k,v])=>k.startsWith('day-'+ym(cur))&&v.mood===i).length);
+  return head('Трекери',`${MON[cur.getMonth()]} ${cur.getFullYear()}`,{arrows:true})+`<div class="body">
+   <div class="box"><div class="lbl">Трекер звичок<span class="aside">натисни клітинку, щоб відмітити день</span></div><div class="hgrid-wrap"><table class="hgrid">${headRow}${rows}</table></div>
+    <form class="add" data-add="hab:names" data-tpl="str"><input class="ln" name="t" placeholder="Нова звичка" aria-label="Нова звичка"><button class="btn">Додати</button></form></div>
+   <div class="box pink" style="max-width:520px"><div class="lbl">Трекер настрою</div><div class="moodcal">${DSH.map(d=>`<span style="font-size:8.5px;text-align:center;color:var(--muted)">${d}</span>`).join('')}${mc}</div>
+    <div class="legend">${MOODS.map(([nm,c],i)=>`<span><i style="background:${c}"></i>${nm} · ${cnt[i]}</span>`).join('')}</div>
+    <div class="hint" style="margin-top:8px">Настрій ставиться на сторінці дня. Натисни на дату, щоб відкрити її.</div></div>
+  </div>`;
+}
+
+/* ======================= ЦІЛІ ======================= */
+function vGoals(){
+  const s=sub.goals;let body='';
+  if(s==='goals'){
+    const g=doc('goals').items;
+    const cards=g.map((x,i)=>{const st=x.steps||[],dn=st.filter(q=>q.done).length,pct=st.length?Math.round(dn/st.length*100):0;
+      return `<div class="box goal"><div class="top"><input class="title" data-k="goals:items.${i}.title" value="${esc(x.title)}" aria-label="Ціль">${del(`data-del="goals:items.${i}"`,'Видалити ціль')}</div>
+       <div class="meta"><select data-k="goals:items.${i}.sphere" aria-label="Сфера">${SPHERES.map(sp=>`<option ${sp===x.sphere?'selected':''}>${sp}</option>`).join('')}</select><label>до <input type="date" data-k="goals:items.${i}.until" value="${esc(x.until)}" aria-label="Термін"></label></div>
+       ${inp(`goals:items.${i}.why`,'Навіщо мені це')}
+       <div class="prog"><div class="bar"><i style="width:${pct}%"></i></div>${dn}/${st.length} кроків</div>
+       ${st.map((q,j)=>`<div class="item ${q.done?'done':''}"><input type="checkbox" class="chk" data-chk="goals:items.${i}.steps.${j}.done" ${q.done?'checked':''} aria-label="Крок виконано"><input class="t" data-k="goals:items.${i}.steps.${j}.t" value="${esc(q.t)}" aria-label="Крок">${del(`data-del="goals:items.${i}.steps.${j}"`)}</div>`).join('')}
+       <form class="add" data-add="goals:items.${i}.steps" data-tpl="task"><input class="ln" name="t" placeholder="+ крок до цілі" aria-label="Новий крок"></form></div>`}).join('');
+    body=`<div class="box pink"><div class="lbl">Нова ціль</div><form class="form" data-add="goals:items" data-tpl="goal"><input class="field full" name="title" placeholder="Яка ціль?" aria-label="Ціль" required><select class="field" name="sphere" aria-label="Сфера">${SPHERES.map(x=>`<option>${x}</option>`).join('')}</select><input class="field" type="date" name="until" aria-label="Термін"><button class="btn full">Додати ціль</button></form></div>
+      <div class="grid2">${cards||'<div class="empty">Тут з’являться твої цілі з кроками і прогресом.</div>'}</div>`;
+  }else if(s==='wish'){
+    const w=doc('wish').items;
+    const list=t=>{const it=w.map((x,i)=>[x,i]).filter(([x])=>x.list===t);const sum=it.filter(([x])=>!x.done).reduce((a,[x])=>a+(+x.price||0),0);
+      return `<div class="box ${t==='self'?'pink':''}"><div class="lbl">${t==='self'?'Для себе':'Враження'}<span class="aside">${money(sum)}</span></div>
+       ${it.map(([x,i])=>`<div class="wish ${x.done?'done':''}"><input type="checkbox" class="chk" data-chk="wish:items.${i}.done" ${x.done?'checked':''} aria-label="Вже є"><input class="t" data-k="wish:items.${i}.title" value="${esc(x.title)}" aria-label="Бажання"><input class="n" data-k="wish:items.${i}.price" value="${esc(x.price)}" placeholder="₴" inputmode="numeric" aria-label="Ціна">${del(`data-del="wish:items.${i}"`)}</div>`).join('')||'<div class="empty">Що хочеш собі?</div>'}
+       <form class="add" data-add="wish:items" data-tpl="wish" data-list="${t}"><input class="ln" name="title" placeholder="Бажання" aria-label="Бажання"><input class="ln" name="price" placeholder="₴" inputmode="numeric" aria-label="Ціна" style="flex:0 0 80px"><button class="btn">Додати</button></form></div>`};
+    body=`<div class="grid2">${list('self')}${list('exp')}</div>`;
+  }else{
+    const a=doc('aff').items;
+    body=`<div class="box pink"><div class="lbl">Мої афірмації<span class="aside">щодня на головній — одна з них</span></div>
+     ${a.map((x,i)=>`<div class="item noc"><input class="t" data-k="aff:items.${i}" value="${esc(x)}" aria-label="Афірмація">${del(`data-del="aff:items.${i}"`)}</div>`).join('')||'<div class="empty">Додай слова, які тебе підтримують.</div>'}
+     <form class="add" data-add="aff:items" data-tpl="str"><input class="ln" name="t" placeholder="Я…" aria-label="Нова афірмація"><button class="btn">Додати</button></form></div>`;
+  }
+  return head('Цілі','усе можливо')+tabs([['goals','Цілі й кроки'],['wish','Вішліст'],['aff','Афірмації']],s,'data-gsub')+`<div class="body">${body}</div>`;
+}
+
+/* ======================= ФІНАНСИ ======================= */
+function vFinance(){
+  const s=sub.finance;let body='';
+  if(s==='month'){
+    const f=doc(keyOf('fin')),fact={};f.exp.forEach(e=>fact[e.cat]=(fact[e.cat]||0)+ +e.amt);
+    const spent=f.exp.reduce((a,e)=>a+ +e.amt,0),inc=f.inc.reduce((a,e)=>a+(+e.amt||0),0),saved=f.piggy*(+f.coin||500),rest=inc-spent-saved;
+    const rows=CATS.map(c=>{const p=+(f.plan[c]||0),a=fact[c]||0,pct=p?Math.min(100,a/p*100):(a?100:0);
+      return `<tr><td>${c}<div class="bar"><i class="${p&&a>p?'over':''}" style="width:${pct}%"></i></div></td><td class="n"><input data-plan="${esc(c)}" value="${p||''}" inputmode="numeric" placeholder="—" aria-label="План: ${esc(c)}"></td><td class="n">${a?money(a):'—'}</td></tr>`}).join('');
+    const exps=f.exp.map((e,i)=>[e,i]).sort((a,b)=>b[0].date.localeCompare(a[0].date)).map(([e,i])=>{const dd=parseD(e.date);
+      return `<div class="exp"><span class="m">${esc(e.what)}</span><span class="a">−${money(e.amt)}</span>${del(`data-del="fin:exp.${i}"`)}<span class="c">${dd.getDate()} ${MONG[dd.getMonth()]} · ${esc(e.cat)}</span></div>`}).join('');
+    const T=today(),defD=ym(cur)===ym(T)?iso(T):iso(new Date(cur.getFullYear(),cur.getMonth(),1));
+    const mlist=(path,name,ph)=>doc(keyOf('fin'))[path].map((x,i)=>`<div class="money">${path==='pay'?`<span style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="chk" data-chk="fin:pay.${i}.done" ${x.done?'checked':''} aria-label="Сплачено"><input data-k="fin:pay.${i}.name" value="${esc(x.name)}" aria-label="Платіж" style="${x.done?'text-decoration:line-through;color:var(--muted)':''}"></span>`:`<input data-k="fin:inc.${i}.src" value="${esc(x.src)}" aria-label="Джерело">`}<input class="n" data-k="fin:${path}.${i}.amt" value="${esc(x.amt)}" inputmode="numeric" aria-label="Сума">${del(`data-del="fin:${path}.${i}"`)}</div>`).join('')||`<div class="empty">${ph}</div>`;
+    const coins=Array.from({length:12},(_,i)=>`<button class="coin ${i<f.piggy?'on':''}" data-coin="${i+1}" aria-label="Відкладено ${i+1} раз"></button>`).join('');
+    body=`<div class="split">
+     <div class="col">
+      <div class="box pink"><div class="lbl">Додати витрату</div><form class="form" data-add="fin:exp" data-tpl="exp">
+       <input class="field full" name="what" placeholder="На що або де" aria-label="На що" required>
+       <input class="field" name="amt" placeholder="Сума, ₴" inputmode="decimal" aria-label="Сума" required>
+       <input class="field" type="date" name="date" value="${defD}" aria-label="Дата">
+       <select class="field full" name="cat" aria-label="Категорія">${CATS.map(c=>`<option>${c}</option>`).join('')}</select>
+       <button class="btn full">Додати</button></form></div>
+      <div class="box"><div class="lbl">Витрати за категоріями<span class="aside">план · факт</span></div><div class="tblw"><table class="tbl"><thead><tr><th>Категорія</th><th class="n">План</th><th class="n">Факт</th></tr></thead><tbody>${rows}<tr class="total"><td>Разом</td><td class="n">${money(Object.values(f.plan).reduce((a,b)=>a+(+b||0),0))}</td><td class="n">${money(spent)}</td></tr></tbody></table></div></div>
+      <div class="box"><div class="lbl">Усі витрати<span class="aside">${f.exp.length}</span></div>${exps||'<div class="empty">Витрат цього місяця ще немає.</div>'}</div>
+     </div>
+     <div class="col">
+      <div class="box sand"><div class="lbl">Баланс місяця</div><div class="balance"><div><span>Дохід</span><b>${money(inc)}</b></div><div><span>Витрати</span><b>${money(spent)}</b></div><div><span>Заощадження</span><b>${money(saved)}</b></div><div class="${rest<0?'neg':''}"><span>Залишок</span><b>${money(rest)}</b></div></div></div>
+      <div class="box"><div class="lbl">Доходи</div>${mlist('inc','src','Зарплата, підробіток, подарунки.')}<form class="add" data-add="fin:inc" data-tpl="inc"><input class="ln" name="src" placeholder="Джерело" aria-label="Джерело доходу"><input class="ln" name="amt" placeholder="₴" inputmode="numeric" aria-label="Сума" style="flex:0 0 90px"><button class="btn">Додати</button></form></div>
+      <div class="box"><div class="lbl">Обов’язкові платежі</div>${mlist('pay','name','Оренда, інтернет, підписки.')}<form class="add" data-add="fin:pay" data-tpl="pay"><input class="ln" name="name" placeholder="Платіж" aria-label="Платіж"><input class="ln" name="amt" placeholder="₴" inputmode="numeric" aria-label="Сума" style="flex:0 0 90px"><button class="btn">Додати</button></form></div>
+      <div class="box pink"><div class="lbl">Скарбничка<span class="aside">кружечок = ${inp('fin:coin','500','ln','inputmode="numeric" style="width:60px;display:inline-block;text-align:right;padding:2px"')} ₴</span></div><div class="piggy">${coins}</div></div>
+     </div></div>`;
+  }else{
+    const y=cur.getFullYear();let ti=0,ts=0;
+    const rows=MON.map((m,i)=>{const f=peek(`fin-${y}-${pad(i+1)}`);const inc=f?f.inc.reduce((a,e)=>a+(+e.amt||0),0):0,sp=f?f.exp.reduce((a,e)=>a+ +e.amt,0):0;ti+=inc;ts+=sp;
+      return `<tr><td><button class="link" data-month="${i}" data-fsub="month">${m}</button></td><td class="n">${inc?money(inc):'—'}</td><td class="n">${sp?money(sp):'—'}</td><td class="n">${inc||sp?money(inc-sp):'—'}</td></tr>`}).join('');
+    const byCat={};Object.entries(store.docs).filter(([k])=>k.startsWith('fin-'+y)).forEach(([,f])=>f.exp.forEach(e=>byCat[e.cat]=(byCat[e.cat]||0)+ +e.amt));
+    const top=Object.entries(byCat).sort((a,b)=>b[1]-a[1]),mx=top[0]?top[0][1]:1;
+    body=`<div class="split"><div class="box"><div class="lbl">Фінанси ${y} року</div><div class="tblw"><table class="tbl"><thead><tr><th>Місяць</th><th class="n">Дохід</th><th class="n">Витрати</th><th class="n">Різниця</th></tr></thead><tbody>${rows}<tr class="total"><td>Рік</td><td class="n">${money(ti)}</td><td class="n">${money(ts)}</td><td class="n">${money(ti-ts)}</td></tr></tbody></table></div></div>
+     <div class="box pink"><div class="lbl">На що йдуть гроші</div>${top.map(([c,a])=>`<div style="padding:5px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${c}</span><b style="font-variant-numeric:tabular-nums">${money(a)}</b></div><div class="bar"><i style="width:${a/mx*100}%"></i></div></div>`).join('')||'<div class="empty">Додай витрати, і тут з’явиться розподіл за рік.</div>'}</div></div>`;
+  }
+  return head('Фінанси',s==='month'?`${MON[cur.getMonth()]} ${cur.getFullYear()}`:'гроші люблять лік',{arrows:true})+tabs([['month','Місяць'],['year','Рік']],s,'data-fsub')+`<div class="body">${body}</div>`;
+}
+
+/* ======================= НОТАТКИ ======================= */
+function vNotes(){
+  const items=doc('notes').items;
+  if(noteOpen){const i=items.findIndex(n=>n.id===noteOpen);if(i<0){noteOpen=null;return vNotes()}const n=items[i];
+    return head('Нотатки','мої думки',{extra:`<div class="arrows"><button data-noteback aria-label="До списку">←</button></div>`})+`<div class="body editor"><div class="box">
+      <input class="title" data-k="notes:items.${i}.title" value="${esc(n.title)}" placeholder="Назва" aria-label="Назва нотатки">
+      <textarea class="area" data-k="notes:items.${i}.body" placeholder="Пиши тут…" aria-label="Текст нотатки" style="margin-top:10px;border:0;padding:6px 0">${esc(n.body)}</textarea>
+      <div class="add" style="justify-content:space-between"><span class="hint">${new Date(n.upd||Date.now()).toLocaleString('uk-UA',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}</span><button class="btn ghost small x" data-delnote="${n.id}" style="font-size:11px;color:var(--wine)">Видалити нотатку</button></div></div></div>`}
+  const q=noteQ.trim().toLowerCase();
+  const list=items.slice().sort((a,b)=>(b.upd||0)-(a.upd||0)).filter(n=>!q||(n.title+' '+n.body).toLowerCase().includes(q));
+  return head('Нотатки','мої думки')+`<div class="body">
+   <div class="add"><input class="field" id="noteq" placeholder="Пошук у нотатках" aria-label="Пошук" value="${esc(noteQ)}"><button class="btn" data-newnote>Нова нотатка</button></div>
+   <div class="notes">${list.map(n=>`<button class="note" data-opennote="${n.id}"><b>${esc(n.title||'Без назви')}</b><span>${esc(n.body||'')}</span><small>${new Date(n.upd||Date.now()).toLocaleDateString('uk-UA',{day:'numeric',month:'long'})}</small></button>`).join('')||`<div class="empty">${q?'Нічого не знайдено.':'Тут будуть твої нотатки: ідеї, списки, думки.'}</div>`}</div></div>`;
+}
+
+/* ======================= НАЛАШТУВАННЯ ======================= */
+const SITE=!window.claude; // відкрито як звичайний сайт (GitHub Pages), а не в claude.ai
+function vSettings(){
+  const where={cloud:'Записи зберігаються в твоєму акаунті claude.ai і синхронізуються між телефоном, планшетом і комп’ютером. Інші люди, яким відкрито цю сторінку, твоїх записів не бачать.',
+    local:SITE?'Записи зберігаються в цьому браузері на цьому пристрої. Щоб перенести планер на інший телефон чи комп’ютер, збережи копію файлом і віднови її там. Якщо очистити дані браузера, записи зникнуть — тому час від часу роби копію.':'Записи зберігаються лише в цьому браузері. Щоб синхронізувати пристрої, відкрий планер, увійшовши в акаунт claude.ai.',loading:'Підключаюся до акаунта…'}[store.mode];
+  const backup=SITE?`<div class="box sand"><div class="lbl">Резервна копія</div><p class="hint" style="margin:0 0 10px">Файл з усіма записами, цілями, фінансами й наліпками.</p>
+    <div class="add"><button class="btn" data-backup>Зберегти копію</button><label class="btn ghost" style="cursor:pointer;text-align:center">Відновити з файлу<input type="file" accept=".json,application/json" id="restorefile" hidden></label></div></div>`:'';
+  return head('Налаштування','мій планер')+`<div class="body grid2">
+   <div class="box pink"><div class="lbl">Ім’я</div>${inp('settings:name','Як до тебе звертатися')}</div>
+   <div class="box"><div class="lbl">Збереження</div><p class="hint" style="margin:0">${where}</p></div>${backup}</div>`;
+}
+function doBackup(){
+  try{const blob=new Blob([JSON.stringify({app:'prettylittle-plans',v:1,saved:new Date().toISOString(),docs:store.docs},null,1)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`prettylittle-plans-${iso(today())}.json`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);toast('Копію збережено у файл.')}
+  catch(e){toast('Не вдалося зберегти копію.')}
+}
+function doRestore(file){
+  const fr=new FileReader();
+  fr.onload=()=>{try{const d=JSON.parse(fr.result);if(d.app!=='prettylittle-plans'||!d.docs)throw 0;store.docs=d.docs;Object.keys(store.docs).forEach(k=>store.dirty.add(k));flush();render();toast('Планер відновлено з копії.')}catch(e){toast('Це не схоже на файл копії планера.')}};
+  fr.readAsText(file);
+}
+
+/* ======================= ГОЛОВНА: КНИГА ======================= */
+const B={open:false,rx:26,ry:-6,z:1,side:'right',tray:false,pop:null,anim:null};
+const STK={
+ heart:'<svg viewBox="0 0 60 54"><path d="M30 50C10 36 3 26 3 16 3 8 9 3 16 3c6 0 10 3 14 9 4-6 8-9 14-9 7 0 13 5 13 13 0 10-7 20-27 34z" fill="#eba9bf" stroke="#5e0c2e" stroke-width="2.5"/><path d="M14 13c2-3 5-4 8-3" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
+ bow:'<svg viewBox="0 0 80 50"><path d="M40 25C28 8 8 4 6 16s16 18 34 9zm0 0c12-17 32-21 34-9S58 34 40 25z" fill="#f3c9d6" stroke="#5e0c2e" stroke-width="2.4"/><path d="M36 27l-10 21 8-3 4 5 2-21m4-2l10 21-8-3-4 5-2-21" fill="#e9acc1" stroke="#5e0c2e" stroke-width="2.2" stroke-linejoin="round"/><ellipse cx="40" cy="25" rx="6" ry="7" fill="#c9809b" stroke="#5e0c2e" stroke-width="2.4"/></svg>',
+ star:'<svg viewBox="0 0 60 58"><path d="M30 3l8 17 19 3-14 13 4 19-17-9-17 9 4-19L3 23l19-3z" fill="#f4d58d" stroke="#5e0c2e" stroke-width="2.5" stroke-linejoin="round"/></svg>',
+ coffee:'<svg viewBox="0 0 60 60"><path d="M10 22h34v14c0 10-7 18-17 18S10 46 10 36z" fill="#fffdfa" stroke="#5e0c2e" stroke-width="2.5"/><path d="M44 27h4a7 7 0 010 14h-5" fill="none" stroke="#5e0c2e" stroke-width="2.5"/><path d="M10 30h34" stroke="#e9acc1" stroke-width="6"/><path d="M20 15c0-4 4-4 4-8m6 8c0-4 4-4 4-8" stroke="#c9809b" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>',
+ flower:'<svg viewBox="0 0 60 60"><g fill="#f3c9d6" stroke="#5e0c2e" stroke-width="2.2"><circle cx="30" cy="14" r="10"/><circle cx="45" cy="25" r="10"/><circle cx="39" cy="43" r="10"/><circle cx="21" cy="43" r="10"/><circle cx="15" cy="25" r="10"/></g><circle cx="30" cy="30" r="8" fill="#f4d58d" stroke="#5e0c2e" stroke-width="2.2"/></svg>',
+ cloud:'<svg viewBox="0 0 70 46"><path d="M18 42a14 14 0 01-2-28 17 17 0 0132-4 12 12 0 0114 13 10 10 0 01-4 19z" fill="#fffdfa" stroke="#5e0c2e" stroke-width="2.5"/><circle cx="28" cy="28" r="2" fill="#5e0c2e"/><circle cx="42" cy="28" r="2" fill="#5e0c2e"/><path d="M31 33c2 2 6 2 8 0" stroke="#5e0c2e" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="24" cy="32" r="3" fill="#eba9bf"/><circle cx="46" cy="32" r="3" fill="#eba9bf"/></svg>',
+ cherry:'<svg viewBox="0 0 60 60"><path d="M22 38c2-12 10-24 22-32M40 40c-2-12 0-24 4-34" stroke="#5e0c2e" stroke-width="2.5" fill="none"/><path d="M44 6c6 0 11 3 12 8-7 1-11-2-12-8z" fill="#9ab37f" stroke="#5e0c2e" stroke-width="2"/><circle cx="20" cy="44" r="11" fill="#c23b5a" stroke="#5e0c2e" stroke-width="2.5"/><circle cx="41" cy="46" r="11" fill="#c23b5a" stroke="#5e0c2e" stroke-width="2.5"/><path d="M15 40c1-2 3-3 5-3" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+ sparkle:'<svg viewBox="0 0 60 60"><path d="M30 4c3 15 11 23 26 26-15 3-23 11-26 26-3-15-11-23-26-26C19 27 27 19 30 4z" fill="#fffdfa" stroke="#5e0c2e" stroke-width="2.5" stroke-linejoin="round"/><path d="M48 6c1 5 3 7 8 8-5 1-7 3-8 8-1-5-3-7-8-8 5-1 7-3 8-8z" fill="#eba9bf"/></svg>',
+ yay:'<svg viewBox="0 0 90 44"><rect x="3" y="3" width="84" height="38" rx="19" fill="#eba9bf" stroke="#5e0c2e" stroke-width="2.5"/><text x="45" y="30" text-anchor="middle" font-family="Great Vibes,cursive" font-size="26" fill="#5e0c2e">yay!</text></svg>',
+ can:'<svg viewBox="0 0 120 44"><path d="M8 4h104l-6 18 6 18H8l6-18z" fill="#fffdfa" stroke="#5e0c2e" stroke-width="2.5" stroke-linejoin="round"/><text x="60" y="29" text-anchor="middle" font-family="Jost,Arial" font-size="15" letter-spacing="1.5" fill="#5e0c2e">ТИ ЗМОЖЕШ</text></svg>',
+ care:'<svg viewBox="0 0 110 44"><rect x="3" y="3" width="104" height="38" rx="6" fill="#f2ebe1" stroke="#5e0c2e" stroke-width="2.5"/><text x="55" y="30" text-anchor="middle" font-family="Great Vibes,cursive" font-size="25" fill="#c9809b">self-care</text></svg>',
+ imp:'<svg viewBox="0 0 110 44"><rect x="3" y="3" width="104" height="38" fill="#5e0c2e"/><text x="55" y="28" text-anchor="middle" font-family="Jost,Arial" font-size="15" letter-spacing="2" fill="#fff">ВАЖЛИВО!</text></svg>',
+ tape1:'<svg viewBox="0 0 200 34"><path d="M4 3h192l-4 7 4 7-4 7 4 7H4l4-7-4-7 4-7z" fill="#f3c9d6"/><path d="M4 3h192l-4 7 4 7-4 7 4 7H4l4-7-4-7 4-7z" fill="url(#st1)"/><defs><pattern id="st1" width="14" height="34" patternUnits="userSpaceOnUse"><rect width="7" height="34" fill="#fffdfa" opacity=".55"/></pattern></defs></svg>',
+ tape2:'<svg viewBox="0 0 200 34"><defs><pattern id="dt2" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="2.6" fill="#c9809b"/></pattern></defs><path d="M4 3h192l-4 7 4 7-4 7 4 7H4l4-7-4-7 4-7z" fill="#fffdfa"/><path d="M4 3h192l-4 7 4 7-4 7 4 7H4l4-7-4-7 4-7z" fill="url(#dt2)"/></svg>',
+ tape3:'<svg viewBox="0 0 200 34"><defs><pattern id="gr3" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M12 0H0v12" fill="none" stroke="#c9809b" stroke-width="1"/></pattern></defs><path d="M4 3h192l-4 7 4 7-4 7 4 7H4l4-7-4-7 4-7z" fill="#f2ebe1"/><path d="M4 3h192l-4 7 4 7-4 7 4 7H4l4-7-4-7 4-7z" fill="url(#gr3)"/></svg>'
+};
+const isTape=k=>k.startsWith('tape');
+function stkHTML(st,i){return `<div class="stk ${isTape(st.k)?'tape':''}" data-stk="${i}" style="left:${st.x}%;top:${st.y}%;--r:${st.r}deg;${isTape(st.k)?'':`--s:${st.s||.17}`}" title="Тягни, щоб перемістити · подвійний дотик або правий клік — зняти">${STK[st.k]||''}</div>`}
+function pageStks(side){const m=ym(cur);return doc('stickers').items.map((s,i)=>[s,i]).filter(([s])=>s.m===m&&s.side===side).map(([s,i])=>stkHTML(s,i)).join('')}
+
+function leftPageHTML(){
+  const mo=doc(keyOf('month')),aff=doc('aff').items.filter(Boolean),T=today();
+  const affT=aff.length?aff[(T.getDate()+T.getMonth()*31)%aff.length]:'';
+  const goals=mo.goals.map((g,i)=>`<div class="item ${g.done?'done':''}"><input type="checkbox" class="chk" data-chk="month:goals.${i}.done" ${g.done?'checked':''} aria-label="Виконано"><input class="t" data-k="month:goals.${i}.t" value="${esc(g.t)}" aria-label="Ціль місяця">${del(`data-del="month:goals.${i}"`)}</div>`).join('');
+  const dates=mo.dates.map((x,i)=>`<div class="item"><span class="num" style="font-size:calc(var(--W) * .05);width:auto">${esc(x.d)}</span><input class="t" data-k="month:dates.${i}.t" value="${esc(x.t)}" aria-label="Подія">${del(`data-del="month:dates.${i}"`)}</div>`).join('');
+  return `<div class="inner lp"><div class="ph"><h2>Місяць</h2><span class="sc">${MON[cur.getMonth()]}</span></div>
+   <div class="bl">Цілі місяця</div>${goals}<form class="add" data-add="month:goals" data-tpl="task"><input class="ln" name="t" placeholder="+ ціль" aria-label="Нова ціль місяця"></form>
+   <div class="bl">Важливі дати</div>${dates}<form class="add" data-add="month:dates" data-tpl="date"><input class="ln" name="d" placeholder="день" inputmode="numeric" aria-label="День" style="flex:0 0 22%"><input class="ln" name="t" placeholder="+ подія" aria-label="Подія"><button class="sr">Додати</button></form>
+   <div class="bl">Фокус</div>${inp('month:focus','на чому зосередитись')}
+   ${affT?`<div class="affb">${esc(affT)}</div>`:''}</div>`;
+}
+function rightPageHTML(){
+  const f=new Date(cur.getFullYear(),cur.getMonth(),1),n=dim(cur),T=iso(today());
+  let cells=DSH.map(d=>`<div class="dh">${d}</div>`).join('')+'<div class="bcell out"></div>'.repeat(wd(f));
+  for(let i=1;i<=n;i++){const k=iso(new Date(cur.getFullYear(),cur.getMonth(),i)),x=peek('day-'+k);
+    const dot=x&&x.mood!=null?`<i style="background:${MOODS[x.mood][1]}"></i>`:'';
+    cells+=`<button class="bcell ${k===T?'today':''} ${B.pop===k?'sel':''}" data-cell="${k}" aria-label="${i} ${MONG[cur.getMonth()]}: записати"><span class="d">${i}${dot}</span><span class="mm">${esc(x?.memo||'')}</span></button>`}
+  const rest=(7-((wd(f)+n)%7))%7;cells+='<div class="bcell out"></div>'.repeat(rest);
+  let pop='';
+  if(B.pop&&B.pop.startsWith(ym(cur))){const dd=parseD(B.pop),x=peek('day-'+B.pop)||blank('day');
+    pop=`<div class="pop" role="dialog" aria-label="Запис на ${dd.getDate()} ${MONG[dd.getMonth()]}"><div class="pt">${dd.getDate()} ${MONG[dd.getMonth()]}, ${DAYS[wd(dd)].toLowerCase()}</div>
+     <textarea id="popmemo" data-k="day-${B.pop}:memo" placeholder="Що запланувати або запам’ятати?" aria-label="Запис">${esc(x.memo||'')}</textarea>
+     <div class="pm">${MOODS.map(([nm,c],i)=>`<button style="background:${c}" data-pmood="${i}" aria-pressed="${x.mood===i}" aria-label="${nm}"></button>`).join('')}</div>
+     <div class="pr"><button class="btn ghost small" data-date="${B.pop}" data-go="day">Відкрити день</button><button class="btn small" data-popclose>Готово</button></div></div>`}
+  return `<div class="inner"><div class="ph"><h2>${MON[cur.getMonth()]}</h2><span class="sc">${cur.getFullYear()}</span></div><div class="bcal">${cells}</div></div>${pop}`;
+}
+function vBook(){
+  const s=doc('settings');
+  const charm=`<svg viewBox="0 0 60 70"><circle cx="30" cy="6" r="5" fill="none" stroke="#c9a96e" stroke-width="2.5"/><path d="M30 66C10 50 4 40 4 29 4 20 10 14 18 14c6 0 9 3 12 8 3-5 6-8 12-8 8 0 14 6 14 15 0 11-6 21-26 37z" fill="#eba9bf" stroke="#5e0c2e" stroke-width="2.5"/><text x="30" y="44" text-anchor="middle" font-family="Great Vibes,cursive" font-size="22" fill="#5e0c2e">P</text><path d="M14 24c2-3 5-4 8-3" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
+  const tray=B.tray?`<div class="tray" aria-label="Наліпки"><div class="tt">Наліпки<button class="link" data-traytoggle>сховати</button></div><div class="g">${Object.keys(STK).map(k=>`<button class="it ${isTape(k)?'tape':''}" data-new="${k}" aria-label="Наліпка">${STK[k]}</button>`).join('')}</div><div class="note2">Перетягни на сторінку. Наліпку можна пересунути, а зняти — правим кліком або подвійним дотиком.</div></div>`:'';
+  return `<div class="stage" id="stage">
+   <div class="hintline">${B.open?'Натисни дату, щоб записати · тягни за край сторінки, щоб гортати · вкладки справа — місяці · тягни фон, щоб повернути':'Натисни на обкладинку, щоб відкрити · брелок дзеленчить · тягни фон, щоб повернути, колесо — наблизити'}</div>
+   <div class="scene" id="scene"><div class="book ${B.open?'open':''} still" id="book">
+    <div class="shadow"></div><div class="backcover"></div>
+    <div class="pg right"><div class="edge r" data-edge="next" title="Тягни вліво — наступний місяць"></div>${rightPageHTML()}<div class="stks" data-page="R">${pageStks('R')}</div>
+     <div class="mtabs">${MSH.map((m,i)=>`<button data-bmonth="${i}" aria-current="${i===cur.getMonth()}" aria-label="${MON[i]}">${m}</button>`).join('')}</div></div>
+    <div class="ribbon"></div>
+    <div class="cover">
+     <div class="bface front" data-opencover role="button" tabindex="0" aria-label="Відкрити планер"><div class="stripes"></div>
+      <div class="plate"><div class="s1">PRETTYLITTLE</div><div class="s2">PLANS</div><div class="s3">by eng.girly</div><div class="s4">${cur.getFullYear()}</div><div class="nm"><span>Ім’я:</span><span>${esc(s.name)}</span></div></div>
+      <div class="strap"></div><div class="coverhint">відкрий мене</div></div>
+     <div class="bface back"><div class="paper"><div class="edge l" data-edge="prev" title="Тягни вправо — попередній місяць"></div>${leftPageHTML()}<div class="stks" data-page="L">${pageStks('L')}</div></div></div>
+    </div>
+    <div class="rings" aria-hidden="true">${'<div class="ring"></div>'.repeat(6)}</div>
+    <div class="charm"><div class="swingr" id="swingr"><div class="cord"></div><button data-charm aria-label="Брелок">${charm}</button></div></div>
+   </div></div>
+   ${tray}
+   <div class="bui"><button data-bookopen>${B.open?'Закрити':'Відкрити'}</button><button class="sec" data-bstep="-1" aria-label="Попередній місяць">‹</button><button class="sec" data-bstep="1" aria-label="Наступний місяць">›</button>${B.open?`<button class="sec narrowonly" data-bside>${B.side==='right'?'← Цілі місяця':'Календар →'}</button>`:''}<button class="sec" data-traytoggle>${B.tray?'Сховати наліпки':'Наліпки'}</button><button class="sec" data-go="home">Огляд дня</button>${SITE?'<button class="sec" data-backup>Копія</button>':''}</div>
+   <div class="bstatus status"><i></i><span></span></div>
+  </div>`;
+}
+function bookLayout(){
+  const st=$('#stage');if(!st)return;
+  const cw=st.clientWidth,ch=st.clientHeight,narrow=cw<700;
+  let W=narrow?Math.min(cw-64,(ch-250)/1.414):Math.min(420,(cw-(B.tray?300:140))/2,(ch-170)/1.414);
+  W=Math.max(150,Math.floor(W));
+  st.style.setProperty('--W',W+'px');st.style.setProperty('--H',Math.round(W*1.414)+'px');
+  st.style.setProperty('--cover','linear-gradient(135deg,#efc1cf,#e7adc0 55%,#dc9cb1)');
+  let shift=0;if(!B.open)shift=-W/2;else if(narrow)shift=B.side==='right'?-W/2:W/2;
+  if(B.tray&&!narrow)shift-=80;
+  $('#scene').style.transform=`translateX(${shift}px) scale(${B.z}) rotateX(${B.rx}deg) rotateY(${B.ry}deg)`;
+  document.querySelectorAll('.narrowonly').forEach(b=>b.hidden=!narrow);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>$('#book')?.classList.remove('still')));
+}
+let actx;function chime(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const t=actx.currentTime;[[1568,0],[2093,.09],[2637,.18]].forEach(([f,d])=>{const o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t+d);g.gain.linearRampToValueAtTime(.12,t+d+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d+1.2);o.connect(g).connect(actx.destination);o.start(t+d);o.stop(t+d+1.3)})}catch(e){}}
+function bookMonth(next,target){
+  // перегортання: знімок старих сторінок → новий місяць → листок перелітає
+  const oldR=document.querySelector('.pg.right .inner')?.outerHTML||'',oldL=document.querySelector('.bface.back .inner')?.outerHTML||'';
+  cur=target||new Date(cur.getFullYear(),cur.getMonth()+(next?1:-1),1);if(ym(cur)===ym(today()))cur=today();B.pop=null;
+  render();
+  if(!B.open||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const newR=document.querySelector('.pg.right .inner')?.outerHTML||'',newL=document.querySelector('.bface.back .inner')?.outerHTML||'';
+  const leaf=document.createElement('div');leaf.className='leaf '+(next?'go-next':'go-prev');
+  leaf.innerHTML=next?`<div class="lf f">${oldR}</div><div class="lf b">${newL}</div>`:`<div class="lf f">${newR}</div><div class="lf b">${oldL}</div>`;
+  $('#book').appendChild(leaf);setTimeout(()=>leaf.remove(),800);
+}
+function toggleBook(open){B.open=open;B.pop=null;if(!open)B.side='right';render();$('#book').classList.remove('still');
+  // анімуємо обкладинку з попереднього стану
+  const bk=$('#book');bk.classList.add('still');bk.classList.toggle('open',!open);bookLayout();void bk.offsetWidth;requestAnimationFrame(()=>{bk.classList.remove('still');bk.classList.toggle('open',open)})}
+
+/* жести на книзі: обертання, гортання за край, наліпки */
+let drag=null;
+function pageAt(x,y,ghost){if(ghost)ghost.style.display='none';const el=document.elementFromPoint(x,y);if(ghost)ghost.style.display='';const p=el&&el.closest('.pg.right,.bface.back');if(!p)return null;
+  const layer=p.querySelector('.stks');const r=layer.getBoundingClientRect();return{side:layer.dataset.page,x:Math.max(2,Math.min(98,(x-r.left)/r.width*100)),y:Math.max(2,Math.min(98,(y-r.top)/r.height*100))}}
+document.addEventListener('pointerdown',e=>{
+  if(view!=='book')return;const t=e.target;
+  const nw=t.closest('[data-new]');
+  if(nw){e.preventDefault();const g=document.createElement('div');g.className='ghost '+(isTape(nw.dataset.new)?'tape':'');g.innerHTML=STK[nw.dataset.new];g.style.left=e.clientX+'px';g.style.top=e.clientY+'px';document.body.appendChild(g);drag={type:'new',k:nw.dataset.new,g};return}
+  const sk=t.closest('.stk');
+  if(sk){e.preventDefault();const i=+sk.dataset.stk,now=Date.now();
+    if(drag===null&&sk._last&&now-sk._last<350){doc('stickers').items.splice(i,1);touch('stickers');rerender();return}
+    sk._last=now;sk.classList.add('lift');const r=sk.parentElement.getBoundingClientRect();drag={type:'move',i,el:sk,r,x0:e.clientX,y0:e.clientY,moved:false};sk.setPointerCapture?.(e.pointerId);return}
+  const ed=t.closest('[data-edge]');
+  if(ed&&B.open){drag={type:'flip',dir:ed.dataset.edge,x0:e.clientX};return}
+  if(t.closest('.pg,.cover,.tray,.bui,.charm,.mtabs,.pop,input,textarea,button,form'))return;
+  if(t.closest('#stage')){drag={type:'orbit',x0:e.clientX,y0:e.clientY,rx:B.rx,ry:B.ry};$('#scene').classList.add('drag')}
+});
+document.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  if(drag.type==='new'){drag.g.style.left=e.clientX+'px';drag.g.style.top=e.clientY+'px';return}
+  if(drag.type==='move'){const dx=e.clientX-drag.x0,dy=e.clientY-drag.y0;if(Math.abs(dx)+Math.abs(dy)>3)drag.moved=true;const s=doc('stickers').items[drag.i];
+    drag.el.style.left=Math.max(2,Math.min(98,s.x+dx/drag.r.width*100))+'%';drag.el.style.top=Math.max(2,Math.min(98,s.y+dy/drag.r.height*100))+'%';return}
+  if(drag.type==='orbit'){B.ry=Math.max(-40,Math.min(40,drag.ry+(e.clientX-drag.x0)*.2));B.rx=Math.max(0,Math.min(55,drag.rx-(e.clientY-drag.y0)*.15));bookLayout()}
+});
+document.addEventListener('pointerup',e=>{
+  if(!drag)return;const d=drag;drag=null;
+  if(d.type==='new'){const p=pageAt(e.clientX,e.clientY,d.g);d.g.remove();if(p){doc('stickers').items.push({id:uid(),k:d.k,m:ym(cur),side:p.side,x:+p.x.toFixed(1),y:+p.y.toFixed(1),r:Math.round(Math.random()*24-12),s:.17});touch('stickers');rerender()}else toast('Відкрий планер і відпусти наліпку на сторінці.');return}
+  if(d.type==='move'){d.el.classList.remove('lift');if(d.moved){const s=doc('stickers').items[d.i];s.x=+parseFloat(d.el.style.left).toFixed(1);s.y=+parseFloat(d.el.style.top).toFixed(1);touch('stickers')}return}
+  if(d.type==='flip'){const dx=e.clientX-d.x0;if(d.dir==='next'&&dx<-50)bookMonth(true);else if(d.dir==='prev'&&dx>50)bookMonth(false);return}
+  if(d.type==='orbit')$('#scene')?.classList.remove('drag');
+});
+document.addEventListener('pointercancel',()=>{if(drag?.g)drag.g.remove();drag=null;$('#scene')?.classList.remove('drag')});
+document.addEventListener('contextmenu',e=>{const sk=e.target.closest('.stk');if(sk&&view==='book'){e.preventDefault();doc('stickers').items.splice(+sk.dataset.stk,1);touch('stickers');rerender()}});
+document.addEventListener('wheel',e=>{if(view!=='book'||!e.target.closest('#stage')||e.target.closest('.tray'))return;e.preventDefault();B.z=Math.max(.6,Math.min(1.7,B.z*(e.deltaY<0?1.06:.94)));bookLayout()},{passive:false});
+addEventListener('resize',()=>{if(view==='book')bookLayout()});
+
+/* ======================= рендер ======================= */
+const VIEWS={book:vBook,home:vHome,day:vDay,week:vWeek,month:vMonth,trackers:vTrackers,goals:vGoals,finance:vFinance,notes:vNotes,settings:vSettings};
+function render(){
+  pendingRender=false;
+  const y=scrollY;
+  shell();
+  $('#view').className='content gut'+(view==='book'?' bookmode':'');
+  $('#view').innerHTML=`<div class="view">${VIEWS[view]()}</div><div class="foot"><span class="status" id="st2"><i></i><span></span></span><button class="link" data-go="settings">налаштування</button></div>`;
+  status();
+  if(view==='book')bookLayout();
+  if(render.keep)scrollTo(0,y);render.keep=false;
+}
+function go(v){view=v;try{history.replaceState(null,'','#'+v)}catch(e){}if(v!=='notes')noteOpen=null;render();scrollTo(0,0)}
+function rerender(){render.keep=true;render()}
+function status(m){if(m)store.ui=m;const s=store.ui||store.mode;const txt={ok:'Збережено в акаунті',saving:'Зберігаю…',local:'Збережено в цьому браузері',loading:'Підключаюся…'}[s]||'';
+  document.querySelectorAll('.status').forEach(el=>{['ok','saving','local'].forEach(c=>el.classList.toggle(c,c===s));const sp=el.querySelector('span');if(sp)sp.textContent=txt})}
+let toastT;function toast(t){let el=$('#toast');if(!el){el=document.createElement('div');el.id='toast';el.setAttribute('role','status');el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--wine);color:#fff;padding:10px 14px;border-radius:4px;font-size:13px;z-index:20;max-width:min(92vw,440px)';document.body.appendChild(el)}el.textContent=t;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,4200)}
+
+/* ======================= події ======================= */
+document.addEventListener('focusin',e=>{if(e.target.matches('input:not([type=checkbox]),textarea,select'))typing=true});
+document.addEventListener('focusout',()=>{typing=false;if(pendingRender)setTimeout(()=>{if(!typing&&pendingRender)rerender()},50)});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.id==='noteq'){noteQ=t.value;const pos=t.selectionStart;render();const n=$('#noteq');n.focus();n.setSelectionRange(pos,pos);return}
+  if(t.dataset.k){put(t.dataset.k,t.value);if(t.dataset.k.startsWith('notes:')){const[,p]=resolve(t.dataset.k);const i=+p.split('.')[1];doc('notes').items[i].upd=Date.now()}return}
+  if(t.dataset.plan!=null){doc(keyOf('fin')).plan[t.dataset.plan]=+t.value.replace(/\D/g,'')||0;touch(keyOf('fin'))}
+});
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='restorefile'){if(t.files[0])doRestore(t.files[0]);t.value='';return}
+  if(t.dataset.chk){put(t.dataset.chk,t.checked);rerender();return}
+  if(t.dataset.plan!=null||(t.dataset.k&&(t.dataset.k.includes('price')||t.dataset.k.includes('.amt')||t.dataset.k.startsWith('fin:coin')||t.tagName==='SELECT')))rerender();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('[role=button]')){e.preventDefault();e.target.click()}});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button,[role=button]');if(!b)return;const ds=b.dataset;
+  if(ds.backup!=null)return doBackup();
+  /* книга на головній */
+  if(ds.opencover!=null){if(!B.open)toggleBook(true);return}
+  if(ds.bookopen!=null)return toggleBook(!B.open);
+  if(ds.charm!=null){const s=$('#swingr');s.classList.remove('ring');void s.offsetWidth;s.classList.add('ring');chime();return}
+  if(ds.bstep)return bookMonth(+ds.bstep>0);
+  if(ds.bmonth!=null){const m=+ds.bmonth;if(m===cur.getMonth())return;return bookMonth(m>cur.getMonth(),new Date(cur.getFullYear(),m,1))}
+  if(ds.bside!=null){B.side=B.side==='right'?'left':'right';return render()}
+  if(ds.traytoggle!=null){B.tray=!B.tray;return render()}
+  if(ds.cell){B.pop=ds.cell;rerender();const t=$('#popmemo');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length)}return}
+  if(ds.pmood!=null&&B.pop){const k='day-'+B.pop,d=doc(k),m=+ds.pmood;d.mood=d.mood===m?null:m;touch(k);return rerender()}
+  if(ds.popclose!=null){B.pop=null;return rerender()}
+  if(b.classList.contains('x')&&(ds.del!=null||ds.delhab!=null||ds.delnote!=null)){
+    if(!b.classList.contains('armed')){document.querySelectorAll('.x.armed').forEach(x=>{x.classList.remove('armed');x.textContent='×'});b.classList.add('armed');b.textContent='Точно?';return}
+    if(ds.del){const[k,p]=resolve(ds.del);const parts=p.split('.'),i=+parts.pop();getP(doc(k),parts.join('.')).splice(i,1);touch(k);rerender();return}
+    if(ds.delhab!=null){const h=doc(keyOf('hab')),i=+ds.delhab;h.names.splice(i,1);const nm={};Object.entries(h.marks).forEach(([kk,v])=>{const[a,d]=kk.split('|').map(Number);if(a<i)nm[kk]=v;else if(a>i)nm[(a-1)+'|'+d]=v});h.marks=nm;touch(keyOf('hab'));rerender();return}
+    if(ds.delnote){const n=doc('notes');n.items=n.items.filter(x=>x.id!==ds.delnote);touch('notes');noteOpen=null;render();return}
+  }
+  if(ds.date)cur=parseD(ds.date);
+  if(ds.month!=null){const m=+ds.month,T=today();cur=(m===T.getMonth()&&cur.getFullYear()===T.getFullYear())?T:new Date(cur.getFullYear(),m,1)}
+  if(ds.msub){if(ds.msub==='trk')return go('trackers');if(ds.msub==='fin')return go('finance');sub.month=ds.msub;return rerender()}
+  if(ds.gsub){sub.goals=ds.gsub;return rerender()}
+  if(ds.fsub){sub.finance=ds.fsub;return ds.go?go(ds.go):render()}
+  if(ds.go)return go(ds.go);
+  if(ds.date||ds.month!=null)return render();
+  if(ds.step){const s=+ds.step;if(view==='week')cur=addDays(cur,7*s);else if(['month','finance','trackers'].includes(view))cur=new Date(cur.getFullYear(),cur.getMonth()+s,1);else cur=addDays(cur,s);return render()}
+  if(ds.water){const d=doc(keyOf('day')),n=+ds.water;d.water=d.water===n?n-1:n;touch(keyOf('day'));return rerender()}
+  if(ds.mood!=null){const d=doc(keyOf('day')),m=+ds.mood;d.mood=d.mood===m?null:m;touch(keyOf('day'));return rerender()}
+  if(ds.star){const d=doc(keyOf('day')),n=+ds.star;d.sleep.q=d.sleep.q===n?n-1:n;touch(keyOf('day'));return rerender()}
+  if(ds.coin){const f=doc(keyOf('fin')),n=+ds.coin;f.piggy=f.piggy===n?n-1:n;touch(keyOf('fin'));return rerender()}
+  if(ds.hab){const h=doc(keyOf('hab'));h.marks[ds.hab]?delete h.marks[ds.hab]:h.marks[ds.hab]=1;touch(keyOf('hab'));return rerender()}
+  if(ds.newnote!=null){const n={id:uid(),title:'',body:'',upd:Date.now()};doc('notes').items.push(n);touch('notes');noteOpen=n.id;render();$('.editor .title')?.focus();return}
+  if(ds.opennote){noteOpen=ds.opennote;render();scrollTo(0,0);return}
+  if(ds.noteback!=null){noteOpen=null;render();return}
+});
+document.addEventListener('submit',e=>{
+  e.preventDefault();const f=e.target,ref=f.dataset.add;if(!ref)return;const fd=Object.fromEntries(new FormData(f));
+  const[k,p]=resolve(ref);const arr=getP(doc(k),p)||(setP(doc(k),p,[]),getP(doc(k),p));let item;
+  switch(f.dataset.tpl){
+    case 'task':if(!fd.t?.trim())return;item={t:fd.t.trim(),done:false};break;
+    case 'str':if(!fd.t?.trim())return;item=fd.t.trim();break;
+    case 'date':if(!fd.t?.trim())return;item={d:(fd.d||'').trim(),t:fd.t.trim()};break;
+    case 'goal':if(!fd.title?.trim())return;item={id:uid(),title:fd.title.trim(),sphere:fd.sphere,until:fd.until||'',why:'',steps:[]};break;
+    case 'wish':if(!fd.title?.trim())return;item={id:uid(),list:f.dataset.list,title:fd.title.trim(),price:(fd.price||'').replace(/\D/g,''),done:false};break;
+    case 'exp':{const a=parseFloat(String(fd.amt).replace(',','.').replace(/\s/g,''));if(!fd.what?.trim()||!(a>0)){toast('Вкажи, на що витрата, і суму більше нуля.');return}item={what:fd.what.trim(),amt:a,cat:fd.cat,date:fd.date||iso(today())};break}
+    case 'inc':if(!fd.src?.trim())return;item={src:fd.src.trim(),amt:(fd.amt||'').replace(/\D/g,'')};break;
+    case 'pay':if(!fd.name?.trim())return;item={name:fd.name.trim(),amt:(fd.amt||'').replace(/\D/g,''),done:false};break;
+  }
+  arr.push(item);touch(k);rerender();
+  const again=document.querySelector(`form[data-add="${CSS.escape(ref)}"]${f.dataset.list?`[data-list="${f.dataset.list}"]`:''} input`);if(again&&f.dataset.tpl!=='goal'&&f.dataset.tpl!=='exp')again.focus();
+});
+addEventListener('hashchange',()=>{const v=location.hash.slice(1);if(VIEWS[v]&&v!==view){view=v;render()}});
+addEventListener('beforeunload',()=>{if(store.dirty.size)flush()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&store.dirty.size){clearTimeout(store.timer);flush()}});
+
+render();
+connect();
+})();
+</script>
+</body>
+</html>
