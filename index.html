@@ -960,7 +960,7 @@ const GL={ready:false,p:null,busy:false,yaw:0,pitch:0,idle:0};
 const TEX_BASE='tex/'; // текстури блокнота (3d/make_web_tex.py → 3d/web/tex)
 function glOK(){if(glOK.v!=null)return glOK.v;try{const c=document.createElement('canvas'),x=window.WebGLRenderingContext&&(c.getContext('webgl2')||c.getContext('webgl'));glOK.v=!!x;x?.getExtension('WEBGL_lose_context')?.loseContext()}catch(e){glOK.v=false} /* пробний контекст одразу звільняємо (iPhone має їх мало) */return glOK.v}
 // камери: на що дивимось (t), яку ширину й глибину вмістити (w, h), нахил від вертикалі й поворот довкола
-const GCAM={closed:{t:[.48,.05,.03],w:1.45,h:1.95,tilt:.5,az:.35},open:{t:[.55,.05,.02],w:3.05,h:1.7,tilt:.22,az:0},
+const GCAM={closed:{t:[.5,.05,.02],w:1.3,h:1.68,tilt:.34,az:.14},open:{t:[.55,.05,.02],w:3.05,h:1.7,tilt:.22,az:0},
   openPhone:{t:[1.02,.05,.02],w:2.15,h:1.6,tilt:.2,az:0}};
 const openView=()=>innerWidth<700?GCAM.openPhone:GCAM.open;
 function glInit(){
@@ -997,16 +997,28 @@ function glInit(){
 function glFail(why){console.warn('3D-модель вимкнено:',why);GL.failed=true;GL.ready=false;GL.busy=false;$('#stage')?.classList.remove('gl');$('#gl3d')?.remove()}
 function glPose(t){GL.t=t;GL.planner.setOpen(Math.max(0,Math.min(1,t)))}
 const lerp=(a,b,k)=>a+(b-a)*k,ease=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+// вільне місце для блокнота: між підказкою вгорі й кнопками внизу (у пікселях полотна)
+function glFree(){
+  const c=GL.R.domElement,cr=c.getBoundingClientRect(),st=$('#stage');let top=8,bot=cr.height-8;
+  const hl=st?.querySelector('.hintline');if(hl){const r=hl.getBoundingClientRect();top=Math.max(top,r.bottom-cr.top+6)}
+  const ui=st?.querySelector('.bui:not([hidden])');if(ui){const r=ui.getBoundingClientRect();if(r.height)bot=Math.min(bot,r.top-cr.top-10)}
+  if(bot-top<cr.height*.4){top=8;bot=cr.height-8}
+  GL.free={top,bot};
+}
 function glCamAt(k,a,b){
   const {cam,R}=GL,c=R.domElement,w=c.clientWidth||1,h=c.clientHeight||1;
+  if(!GL.free)glFree();
+  const {top,bot}=GL.free,fh=Math.max(1,bot-top);
   cam.aspect=w/h;
   const L=(f)=>lerp(a[f],b[f],k),T=a.t.map((v,i)=>lerp(v,b.t[i],k)),tilt=L('tilt'),az=L('az');
-  const tv=Math.tan(cam.fov*Math.PI/360),th=tv*cam.aspect;
-  const dist=Math.max(L('w')/2/th,(L('h')*Math.cos(tilt)+.15)/2/tv)*1.06/(B.z||1);
+  const tv=Math.tan(cam.fov*Math.PI/360)*fh/h,th=Math.tan(cam.fov*Math.PI/360)*cam.aspect;
+  const dist=Math.max(L('w')/2/th,(L('h')*Math.cos(tilt)+.12)/2/tv)*1.05/(B.z||1);
   cam.position.set(T[0]+dist*Math.sin(tilt)*Math.sin(az),T[1]+dist*Math.cos(tilt),T[2]+dist*Math.sin(tilt)*Math.cos(az));
-  cam.lookAt(...T);cam.updateProjectionMatrix();
+  cam.lookAt(...T);
+  cam.setViewOffset(w,h,0,h/2-(top+bot)/2,w,h);   // центр кадру — посередині вільного місця
+  cam.updateProjectionMatrix();
 }
-function glSize(){const c=GL.R.domElement,p=c.parentElement;if(!p)return;const w=p.clientWidth,h=p.clientHeight;if(!w||!h)return;if(c.width!==Math.round(w*GL.R.getPixelRatio())||c.height!==Math.round(h*GL.R.getPixelRatio()))GL.R.setSize(w,h,false)}
+function glSize(){const c=GL.R.domElement,p=c.parentElement;if(!p)return;const w=p.clientWidth,h=p.clientHeight;if(!w||!h)return;if(c.width!==Math.round(w*GL.R.getPixelRatio())||c.height!==Math.round(h*GL.R.getPixelRatio())){GL.R.setSize(w,h,false);GL.free=null}}
 function glLoop(now){
   GL.raf=0;if(GL.failed)return;const c=GL.R.domElement;if(!c.isConnected&&!GL.busy)return;
   glSize();
@@ -1064,6 +1076,7 @@ function glUI(){
   const bui=st.querySelector('.bui:not(.glui)'),gu=st.querySelector('.glui'),hl=st.querySelector('.hintline');
   if(bui){bui.hidden=open;bui.style.opacity=busy?'0':''}
   if(gu){gu.hidden=!open;gu.style.opacity=busy?'0':''}
+  GL.free=null;
   if(hl){hl.style.opacity=busy?'0':'';hl.textContent=open?(innerWidth<700?'Натисни на календар, щоб перейти до нього':'Натисни на календар, щоб перейти до нього · тягни, щоб повернути'):(innerWidth<700?'Натисни на планер, щоб відкрити':'Натисни на планер, щоб відкрити · тягни, щоб повернути, колесо — наблизити')}
 }
 function glRun(open,ms){
