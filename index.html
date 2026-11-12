@@ -335,6 +335,15 @@ textarea.area{width:100%;min-height:90px;border:1px solid var(--line);background
 .pop .pm button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:0}
 .pop .pm button[aria-pressed="true"]{border-color:var(--wine)}
 .pop .pr{display:flex;gap:6px;justify-content:space-between;flex-wrap:wrap}
+/* телефон: після анімації розворот стає пласкою сторінкою (iOS погано натискає в 3D) */
+.flatwrap{position:absolute;left:0;right:0;top:calc(46px + env(safe-area-inset-top,0px));display:flex;justify-content:center;padding-right:26px}
+.pgflat{position:relative;width:var(--W);height:var(--H);background:var(--paper);border-radius:6px;box-shadow:0 18px 40px -22px rgba(60,14,24,.5),0 0 0 1px #e9dfd3;touch-action:pan-y}
+.pgflat .mtabs{transform:none}
+.pgflat.in-l{animation:inL .35s ease-out}.pgflat.in-r{animation:inR .35s ease-out}
+@keyframes inL{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+@keyframes inR{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+.flatrings{position:absolute;left:-7px;top:7%;bottom:7%;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
+.flatrings i{width:16px;height:9px;border:2.5px solid #c8b08a;border-right:0;border-radius:9px 0 0 9px;display:block}
 /* листок, що перегортається */
 .leaf{position:absolute;left:var(--W);top:0;width:var(--W);height:var(--H);transform-origin:left center;transform-style:preserve-3d;z-index:4;pointer-events:none;transform:translateZ(2px)}
 .leaf .lf{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--paper);overflow:hidden}
@@ -800,8 +809,20 @@ function vBook(){
   const s=doc('settings');
   const charm=`<svg viewBox="0 0 60 70"><circle cx="30" cy="6" r="5" fill="none" stroke="#c9a96e" stroke-width="2.5"/><path d="M30 66C10 50 4 40 4 29 4 20 10 14 18 14c6 0 9 3 12 8 3-5 6-8 12-8 8 0 14 6 14 15 0 11-6 21-26 37z" fill="#eba9bf" stroke="#5e0c2e" stroke-width="2.5"/><text x="30" y="44" text-anchor="middle" font-family="Great Vibes,cursive" font-size="22" fill="#5e0c2e">P</text><path d="M14 24c2-3 5-4 8-3" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`;
   const tray=B.tray?`<div class="tray" aria-label="Наліпки"><div class="tt">Наліпки<button class="link" data-traytoggle>сховати</button></div><div class="g">${Object.keys(STK).map(k=>`<button class="it ${isTape(k)?'tape':''}" data-new="${k}" aria-label="Наліпка">${STK[k]}</button>`).join('')}</div><div class="note2">Перетягни на сторінку. Наліпку можна пересунути, а зняти — правим кліком або подвійним дотиком.</div></div>`:'';
+  const narrow=innerWidth<700;
+  const hint=narrow?(B.open?'Натисни дату, щоб записати · гортай свайпом':'Натисни на обкладинку, щоб відкрити'):(B.open?'Натисни дату, щоб записати · тягни за край сторінки, щоб гортати · вкладки справа — місяці · тягни фон, щоб повернути':'Натисни на обкладинку, щоб відкрити · брелок дзеленчить · тягни фон, щоб повернути, колесо — наблизити');
+  if(B.open&&narrow&&B.flat){
+    const side=B.side==='right'?'R':'L';
+    return `<div class="stage" id="stage"><div class="hintline">${hint}</div>
+     <div class="flatwrap"><div class="pgflat ${B.slide||''}" id="pgflat">${side==='R'?rightPageHTML():leftPageHTML()}<div class="stks" data-page="${side}">${pageStks(side)}</div>
+      <div class="flatrings" aria-hidden="true">${'<i></i>'.repeat(6)}</div>
+      <div class="mtabs">${MSH.map((m,i)=>`<button data-bmonth="${i}" aria-current="${i===cur.getMonth()}" aria-label="${MON[i]}">${m}</button>`).join('')}</div></div></div>
+     ${tray}
+     <div class="bui"><button data-bookopen>Закрити</button><button class="sec" data-bstep="-1" aria-label="Попередній місяць">‹</button><button class="sec" data-bstep="1" aria-label="Наступний місяць">›</button><button class="sec" data-bside>${B.side==='right'?'← Цілі місяця':'Календар →'}</button><button class="sec" data-traytoggle>${B.tray?'Сховати наліпки':'Наліпки'}</button><button class="sec" data-go="home">Огляд дня</button>${SITE?'<button class="sec" data-backup>Копія</button>':''}</div>
+    </div>`;
+  }
   return `<div class="stage" id="stage">
-   <div class="hintline">${B.open?'Натисни дату, щоб записати · тягни за край сторінки, щоб гортати · вкладки справа — місяці · тягни фон, щоб повернути':'Натисни на обкладинку, щоб відкрити · брелок дзеленчить · тягни фон, щоб повернути, колесо — наблизити'}</div>
+   <div class="hintline">${hint}</div>
    <div class="scene" id="scene"><div class="book ${B.open?'open':''} still" id="book">
     <div class="shadow"></div><div class="backcover"></div>
     <div class="pg right"><div class="edge r" data-edge="next" title="Тягни вліво — наступний місяць"></div>${rightPageHTML()}<div class="stks" data-page="R">${pageStks('R')}</div>
@@ -824,10 +845,12 @@ function vBook(){
 function bookLayout(){
   const st=$('#stage');if(!st)return;
   const cw=st.clientWidth,ch=st.clientHeight,narrow=cw<700;
-  let W=narrow?Math.min(cw-64,(ch-250)/1.414):Math.min(420,(cw-(B.tray?300:140))/2,(ch-170)/1.414);
+  const flat=!!$('#pgflat');
+  let W=flat?Math.min(cw-60,(ch-230)/1.414,460):narrow?Math.min(cw-90,(ch-330)/1.414):Math.min(420,(cw-(B.tray?300:140))/2,(ch-170)/1.414);
   W=Math.max(150,Math.floor(W));
   st.style.setProperty('--W',W+'px');st.style.setProperty('--H',Math.round(W*1.414)+'px');
   st.style.setProperty('--cover','linear-gradient(135deg,#efc1cf,#e7adc0 55%,#dc9cb1)');
+  if(flat)return;
   let shift=0;if(!B.open)shift=-W/2;else if(narrow)shift=B.side==='right'?-W/2:W/2;
   if(B.tray&&!narrow)shift-=80;
   $('#scene').style.transform=`translateX(${shift}px) scale(${B.z}) rotateX(${B.rx}deg) rotateY(${B.ry}deg)`;
@@ -839,6 +862,7 @@ function bookMonth(next,target){
   // перегортання: знімок старих сторінок → новий місяць → листок перелітає
   const oldR=document.querySelector('.pg.right .inner')?.outerHTML||'',oldL=document.querySelector('.bface.back .inner')?.outerHTML||'';
   cur=target||new Date(cur.getFullYear(),cur.getMonth()+(next?1:-1),1);if(ym(cur)===ym(today()))cur=today();B.pop=null;
+  if(B.flat){B.slide=next?'in-r':'in-l';render();B.slide='';return}
   render();
   if(!B.open||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const newR=document.querySelector('.pg.right .inner')?.outerHTML||'',newL=document.querySelector('.bface.back .inner')?.outerHTML||'';
@@ -846,13 +870,18 @@ function bookMonth(next,target){
   leaf.innerHTML=next?`<div class="lf f">${oldR}</div><div class="lf b">${newL}</div>`:`<div class="lf f">${newR}</div><div class="lf b">${oldL}</div>`;
   $('#book').appendChild(leaf);setTimeout(()=>leaf.remove(),800);
 }
-function toggleBook(open){B.open=open;B.pop=null;if(!open)B.side='right';render();$('#book').classList.remove('still');
+let flatT;
+function toggleBook(open){
+  clearTimeout(flatT);B.flat=false;
+  // на телефоні: 3D-анімація відкриття, потім пласка сторінка, де все натискається
+  if(open&&innerWidth<700)flatT=setTimeout(()=>{if(B.open&&view==='book'){B.flat=true;B.slide='in-r';render();B.slide=''}},1250);
+  B.open=open;B.pop=null;if(!open)B.side='right';render();$('#book').classList.remove('still');
   // анімуємо обкладинку з попереднього стану
   const bk=$('#book');bk.classList.add('still');bk.classList.toggle('open',!open);bookLayout();void bk.offsetWidth;requestAnimationFrame(()=>{bk.classList.remove('still');bk.classList.toggle('open',open)})}
 
 /* жести на книзі: обертання, гортання за край, наліпки */
 let drag=null;
-function pageAt(x,y,ghost){if(ghost)ghost.style.display='none';const el=document.elementFromPoint(x,y);if(ghost)ghost.style.display='';const p=el&&el.closest('.pg.right,.bface.back');if(!p)return null;
+function pageAt(x,y,ghost){if(ghost)ghost.style.display='none';const el=document.elementFromPoint(x,y);if(ghost)ghost.style.display='';const p=el&&el.closest('.pg.right,.bface.back,.pgflat');if(!p)return null;
   const layer=p.querySelector('.stks');const r=layer.getBoundingClientRect();return{side:layer.dataset.page,x:Math.max(2,Math.min(98,(x-r.left)/r.width*100)),y:Math.max(2,Math.min(98,(y-r.top)/r.height*100))}}
 document.addEventListener('pointerdown',e=>{
   if(view!=='book')return;const t=e.target;
@@ -862,6 +891,7 @@ document.addEventListener('pointerdown',e=>{
   if(sk){e.preventDefault();const i=+sk.dataset.stk,now=Date.now();
     if(drag===null&&sk._last&&now-sk._last<350){doc('stickers').items.splice(i,1);touch('stickers');rerender();return}
     sk._last=now;sk.classList.add('lift');const r=sk.parentElement.getBoundingClientRect();drag={type:'move',i,el:sk,r,x0:e.clientX,y0:e.clientY,moved:false};sk.setPointerCapture?.(e.pointerId);return}
+  if(t.closest('.pgflat')&&!t.closest('input,textarea,select,.pop,form,.mtabs')){drag={type:'swipe',x0:e.clientX,y0:e.clientY};return}
   const ed=t.closest('[data-edge]');
   if(ed&&B.open){drag={type:'flip',dir:ed.dataset.edge,x0:e.clientX};return}
   if(t.closest('.pg,.cover,.tray,.bui,.charm,.mtabs,.pop,input,textarea,button,form'))return;
@@ -878,6 +908,7 @@ document.addEventListener('pointerup',e=>{
   if(!drag)return;const d=drag;drag=null;
   if(d.type==='new'){const p=pageAt(e.clientX,e.clientY,d.g);d.g.remove();if(p){doc('stickers').items.push({id:uid(),k:d.k,m:ym(cur),side:p.side,x:+p.x.toFixed(1),y:+p.y.toFixed(1),r:Math.round(Math.random()*24-12),s:.17});touch('stickers');rerender()}else toast('Відкрий планер і відпусти наліпку на сторінці.');return}
   if(d.type==='move'){d.el.classList.remove('lift');if(d.moved){const s=doc('stickers').items[d.i];s.x=+parseFloat(d.el.style.left).toFixed(1);s.y=+parseFloat(d.el.style.top).toFixed(1);touch('stickers')}return}
+  if(d.type==='swipe'){const dx=e.clientX-d.x0,dy=e.clientY-d.y0;if(Math.abs(dx)>60&&Math.abs(dy)<70){drag={type:'swiped'};setTimeout(()=>{if(drag&&drag.type==='swiped')drag=null},50);bookMonth(dx<0)}return}
   if(d.type==='flip'){const dx=e.clientX-d.x0;if(d.dir==='next'&&dx<-50)bookMonth(true);else if(d.dir==='prev'&&dx>50)bookMonth(false);return}
   if(d.type==='orbit')$('#scene')?.classList.remove('drag');
 });
@@ -921,6 +952,7 @@ document.addEventListener('change',e=>{const t=e.target;
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('[role=button]')){e.preventDefault();e.target.click()}});
 document.addEventListener('click',e=>{
   const b=e.target.closest('button,[role=button]');if(!b)return;const ds=b.dataset;
+  if(drag&&drag.type==='swiped'){drag=null;return} // після свайпу не відкривати дату під пальцем
   if(ds.backup!=null)return doBackup();
   /* книга на головній */
   if(ds.opencover!=null){if(!B.open)toggleBook(true);return}
@@ -928,7 +960,7 @@ document.addEventListener('click',e=>{
   if(ds.charm!=null){const s=$('#swingr');s.classList.remove('ring');void s.offsetWidth;s.classList.add('ring');chime();return}
   if(ds.bstep)return bookMonth(+ds.bstep>0);
   if(ds.bmonth!=null){const m=+ds.bmonth;if(m===cur.getMonth())return;return bookMonth(m>cur.getMonth(),new Date(cur.getFullYear(),m,1))}
-  if(ds.bside!=null){B.side=B.side==='right'?'left':'right';return render()}
+  if(ds.bside!=null){B.side=B.side==='right'?'left':'right';B.slide=B.side==='right'?'in-r':'in-l';render();B.slide='';return}
   if(ds.traytoggle!=null){B.tray=!B.tray;return render()}
   if(ds.cell){B.pop=ds.cell;rerender();const t=$('#popmemo');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length)}return}
   if(ds.pmood!=null&&B.pop){const k='day-'+B.pop,d=doc(k),m=+ds.pmood;d.mood=d.mood===m?null:m;touch(k);return rerender()}
