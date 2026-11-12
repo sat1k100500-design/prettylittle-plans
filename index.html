@@ -266,6 +266,7 @@ textarea.area{width:100%;min-height:90px;border:1px solid var(--line);background
 .gl3d canvas{display:block;width:100%;height:100%}
 .stage.gl .gl3d{opacity:1}
 .stage.gl .scene{opacity:0;pointer-events:none;transition:opacity .3s}
+.bui[hidden]{display:none}
 .glfade{position:absolute;z-index:8;pointer-events:none;transition:opacity .5s ease}
 /* перед переходом у пласку сторінку: усе, крім правої сторінки, тихо зникає */
 .book .bface.back,.book .backcover,.book .shadow,.book .ribbon,.book .rings,.book .charm{transition:opacity .55s ease}
@@ -850,6 +851,7 @@ function vBook(){
    </div></div>
    ${tray}
    <div class="bui"><button data-bookopen>${B.open?'Закрити':'Відкрити'}</button><button class="sec" data-bstep="-1" aria-label="Попередній місяць">‹</button><button class="sec" data-bstep="1" aria-label="Наступний місяць">›</button>${B.open?`<button class="sec narrowonly" data-bside>${B.side==='right'?'← Цілі місяця':'Календар →'}</button>`:''}<button class="sec" data-traytoggle>${B.tray?'Сховати наліпки':'Наліпки'}</button><button class="sec" data-go="home">Огляд дня</button>${SITE?'<button class="sec" data-backup>Копія</button>':''}</div>
+   ${!B.open&&glOK()&&!GL.failed?'<div class="bui glui" hidden><button data-glcal>До календаря</button><button class="sec" data-glfold>Згорнути</button><button class="sec" data-go="home">Огляд дня</button></div>':''}
    <div class="bstatus status"><i></i><span></span></div>
   </div>`;
 }
@@ -950,15 +952,17 @@ document.addEventListener('wheel',e=>{if(view!=='book'||!e.target.closest('#stag
 addEventListener('resize',()=>{if(view==='book')bookLayout()});
 
 /* ======================= 3D-модель планера (WebGL, Three.js) =======================
-   Модель зібрана в Blender з PDF (3d/build_planner.py → planner.glb). Поки книга закрита, замість
-   CSS-обкладинки показуємо модель: її можна крутити; дотик — резинка зіскакує, обкладинка
-   відкривається, камера наїжджає, і модель тихо змінюється робочим розворотом (або пласкою
-   сторінкою на телефоні), де все натискається. Без WebGL лишається CSS-книга. */
+   Блокнот зібраний кодом у planner3d.js (текстури з PDF: 3d/make_web_tex.py). Замість CSS-обкладинки
+   показуємо модель: її можна крутити; дотик — резинка зіскакує, напівпрозора обкладинка відкидається
+   вліво, вкладка-розкладачка з календарем розгортається вправо. Ще дотик (або «До календаря») —
+   перехід у розділ «Місяць». Без WebGL лишається CSS-книга. */
 const GL={ready:false,p:null,busy:false,yaw:0,pitch:0,idle:0};
 const TEX_BASE='tex/'; // текстури блокнота (3d/make_web_tex.py → 3d/web/tex)
-function glOK(){if(glOK.v!=null)return glOK.v;try{const c=document.createElement('canvas');glOK.v=!!(window.WebGLRenderingContext&&(c.getContext('webgl2')||c.getContext('webgl')))}catch(e){glOK.v=false}return glOK.v}
-// камери в координатах glTF (Blender x,y,z → x,z,-y), ті самі, що й у рендерах
-const GCAM={closed:{p:[1.85,2.15,2.55],t:[.5,.05,.15]},open:{p:[.05,2.85,2.15],t:[.05,0,.12]},flat:{p:[.5,2.75,.02],t:[.5,.07,0]}};
+function glOK(){if(glOK.v!=null)return glOK.v;try{const c=document.createElement('canvas'),x=window.WebGLRenderingContext&&(c.getContext('webgl2')||c.getContext('webgl'));glOK.v=!!x;x?.getExtension('WEBGL_lose_context')?.loseContext()}catch(e){glOK.v=false} /* пробний контекст одразу звільняємо (iPhone має їх мало) */return glOK.v}
+// камери: на що дивимось (t), яку ширину й глибину вмістити (w, h), нахил від вертикалі й поворот довкола
+const GCAM={closed:{t:[.48,.05,.03],w:1.45,h:1.95,tilt:.5,az:.35},open:{t:[.55,.05,.02],w:3.05,h:1.7,tilt:.22,az:0},
+  openPhone:{t:[1.02,.05,.02],w:2.15,h:1.6,tilt:.2,az:0}};
+const openView=()=>innerWidth<700?GCAM.openPhone:GCAM.open;
 function glInit(){
   if(GL.p)return GL.p;
   GL.p=(async()=>{
@@ -996,10 +1000,11 @@ const lerp=(a,b,k)=>a+(b-a)*k,ease=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
 function glCamAt(k,a,b){
   const {cam,R}=GL,c=R.domElement,w=c.clientWidth||1,h=c.clientHeight||1;
   cam.aspect=w/h;
-  // кадр розрахований на 4:3; на вужчому екрані камера відʼїжджає, щоб книга вміщалась
-  const back=Math.min(1.7,Math.max(1,Math.pow(1.33/cam.aspect,.5)))/(B.z||1);
-  const P=a.p.map((v,i)=>lerp(v,b.p[i],k)),T=a.t.map((v,i)=>lerp(v,b.t[i],k));
-  cam.position.set(...P.map((v,i)=>T[i]+(v-T[i])*back));cam.lookAt(...T);cam.updateProjectionMatrix();
+  const L=(f)=>lerp(a[f],b[f],k),T=a.t.map((v,i)=>lerp(v,b.t[i],k)),tilt=L('tilt'),az=L('az');
+  const tv=Math.tan(cam.fov*Math.PI/360),th=tv*cam.aspect;
+  const dist=Math.max(L('w')/2/th,(L('h')*Math.cos(tilt)+.15)/2/tv)*1.06/(B.z||1);
+  cam.position.set(T[0]+dist*Math.sin(tilt)*Math.sin(az),T[1]+dist*Math.cos(tilt),T[2]+dist*Math.sin(tilt)*Math.cos(az));
+  cam.lookAt(...T);cam.updateProjectionMatrix();
 }
 function glSize(){const c=GL.R.domElement,p=c.parentElement;if(!p)return;const w=p.clientWidth,h=p.clientHeight;if(!w||!h)return;if(c.width!==Math.round(w*GL.R.getPixelRatio())||c.height!==Math.round(h*GL.R.getPixelRatio()))GL.R.setSize(w,h,false)}
 function glLoop(now){
@@ -1012,9 +1017,10 @@ function glLoop(now){
     glCamAt(kc,w.c0,w.c1);GL.spin.rotation.y=lerp(w.y0,0,ease(Math.min(1,k*1.6)));GL.spin.rotation.x=lerp(w.x0,0,ease(Math.min(1,k*1.6)));
     if(k>=1){GL.tw=null;w.done?.()}
   }else{
+    const open=GL.state==='open';
     if(!GL.drag){GL.idle+=.008;}
-    GL.spin.rotation.y=GL.yaw+(GL.drag?0:Math.sin(GL.idle)*.07);GL.spin.rotation.x=GL.pitch;
-    glCamAt(0,GCAM.closed,GCAM.closed);
+    GL.spin.rotation.y=GL.yaw+(GL.drag?0:Math.sin(GL.idle)*(open?.025:.07));GL.spin.rotation.x=GL.pitch;
+    const v=open?openView():GCAM.closed;glCamAt(0,v,v);
   }
   GL.R.render(GL.scene,GL.cam);
   GL.raf=requestAnimationFrame(glLoop);
@@ -1029,13 +1035,13 @@ function glMount(){
     const st=$('#stage');
     if(GL.closing){ // з розвороту: модель зʼявляється розкритою і закривається
       GL.closing=false;glPose(GL.dur);GL.yaw=0;GL.pitch=0;
-      const narrow=innerWidth<700;GL.tw={t0:performance.now(),ms:reduced()?1:2400,a0:GL.dur,a1:0,c0:narrow?GCAM.flat:GCAM.open,c1:GCAM.closed,camDelay:0,y0:0,x0:0,done:null};
-    }else if(!GL.busy){glPose(0)}
-    glSize();glCamAt(0,GCAM.closed,GCAM.closed);GL.R.render(GL.scene,GL.cam);
+      GL.state='closed';GL.tw={t0:performance.now(),ms:reduced()?1:2400,a0:GL.dur,a1:0,c0:openView(),c1:GCAM.closed,camDelay:0,y0:0,x0:0,done:null};
+    }else if(!GL.busy){glPose(GL.state==='open'?GL.dur:0)}
+    glUI();
+    glSize();{const v=GL.state==='open'?openView():GCAM.closed;glCamAt(0,v,v)}GL.R.render(GL.scene,GL.cam);
     if(GL.R.getContext().isContextLost())return glFail('no context');
     GL.shown=true;
     if(!st.classList.contains('gl')){
-      const hl=st.querySelector('.hintline');if(hl)hl.textContent=innerWidth<700?'Натисни на планер, щоб відкрити':'Натисни на планер, щоб відкрити · тягни, щоб повернути, колесо — наблизити';
       requestAnimationFrame(()=>st.classList.add('gl'));
     }
     glKick();
@@ -1049,27 +1055,35 @@ function glDown(e){
   const mv=ev=>{const dx=ev.clientX-d.x0,dy=ev.clientY-d.y0;if(Math.abs(dx)+Math.abs(dy)>6)d.moved=true;if(!d.moved)return;
     GL.yaw=Math.max(-1.1,Math.min(1.1,d.yaw+dx*.008));GL.pitch=Math.max(-.25,Math.min(.35,d.pitch+dy*.004))};
   const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);
-    GL.drag=null;if(d.moved)eatClick=Date.now()};
+    GL.drag=null;if(d.moved){eatClick=Date.now();return}if(GL.state==='open')glToCalendar();else glOpen()};
   addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up);
 }
-function glOpen(){
-  if(GL.busy||!GL.ready)return;GL.busy=true;
-  const st=$('#stage'),narrow=innerWidth<700;
-  st.querySelector('.hintline')?.style.setProperty('opacity','0');st.querySelector('.bui')?.style.setProperty('opacity','0');
-  GL.tw={t0:performance.now(),ms:reduced()?1:3000,a0:0,a1:GL.dur,c0:GCAM.closed,c1:narrow?GCAM.flat:GCAM.open,camDelay:.12,
-    y0:GL.spin.rotation.y,x0:GL.spin.rotation.x,done:()=>{
-      // знімок останнього кадру лежить поверх, поки під ним малюється робочий розворот
-      const c=GL.R.domElement,r=c.getBoundingClientRect(),sr=st.getBoundingClientRect();
-      GL.R.render(GL.scene,GL.cam);
-      const img=new Image();img.src=c.toDataURL('image/png');img.className='glfade';
-      img.style.cssText=`left:${r.left-sr.left}px;top:${r.top-sr.top}px;width:${r.width}px;height:${r.height}px`;
-      B.open=true;B.pop=null;B.side='right';B.flat=narrow;GL.yaw=0;GL.pitch=0;
-      render();
-      const ns=$('#stage');ns.appendChild(img);
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{img.style.opacity='0';setTimeout(()=>img.remove(),600)}));
-      GL.busy=false;
-    }};
+/* кнопки й підказка під моделлю: закритий — «Відкрити»; розкладений — «До календаря», «Згорнути» */
+function glUI(){
+  const st=$('#stage');if(!st)return;const open=GL.state==='open',busy=GL.busy;
+  const bui=st.querySelector('.bui:not(.glui)'),gu=st.querySelector('.glui'),hl=st.querySelector('.hintline');
+  if(bui){bui.hidden=open;bui.style.opacity=busy?'0':''}
+  if(gu){gu.hidden=!open;gu.style.opacity=busy?'0':''}
+  if(hl){hl.style.opacity=busy?'0':'';hl.textContent=open?(innerWidth<700?'Натисни на календар, щоб перейти до нього':'Натисни на календар, щоб перейти до нього · тягни, щоб повернути'):(innerWidth<700?'Натисни на планер, щоб відкрити':'Натисни на планер, щоб відкрити · тягни, щоб повернути, колесо — наблизити')}
+}
+function glRun(open,ms){
+  if(GL.busy||!GL.ready)return;GL.busy=true;glUI();
+  GL.tw={t0:performance.now(),ms:reduced()?1:ms,a0:open?0:GL.dur,a1:open?GL.dur:0,c0:open?GCAM.closed:openView(),c1:open?openView():GCAM.closed,camDelay:open?.1:0,
+    y0:GL.spin.rotation.y,x0:GL.spin.rotation.x,done:()=>{GL.busy=false;GL.state=open?'open':'closed';GL.yaw=0;GL.pitch=0;GL.idle=0;glUI()}};
   glKick();
+}
+function glOpen(){glRun(true,3200)}
+function glFold(){glRun(false,2600)}
+// з розкладеного планера — у календар місяця: кадр моделі тане поверх розділу «Місяць»
+function glToCalendar(){
+  if(GL.busy)return;
+  const c=GL.R.domElement,r=c.getBoundingClientRect();GL.R.render(GL.scene,GL.cam);
+  const img=new Image();img.src=c.toDataURL('image/png');img.className='glfade';
+  img.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;transform-origin:50% 50%;transition:opacity .6s ease,transform .6s cubic-bezier(.3,.7,.2,1)`;
+  document.body.appendChild(img);
+  GL.state='closed';GL.yaw=0;GL.pitch=0;glPose(0);
+  cur=today();go('month');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{img.style.opacity='0';img.style.transform='scale(1.12)';setTimeout(()=>img.remove(),700)}));
 }
 function glClose(){
   // закриття: розворот тане, під ним — розкрита модель, яка закривається
@@ -1116,7 +1130,9 @@ document.addEventListener('click',e=>{
   if(Date.now()-eatClick<400)return; // після обертання книги не відкривати її
   if(ds.backup!=null)return doBackup();
   /* книга на головній */
-  if(ds.glopen!=null)return glOpen();
+  if(ds.glopen!=null){if(e.detail===0)(GL.state==='open'?glToCalendar():glOpen());return} // Enter з клавіатури
+  if(ds.glcal!=null)return glToCalendar();
+  if(ds.glfold!=null)return glFold();
   if(ds.opencover!=null){if(!B.open)toggleBook(true);return}
   if(ds.bookopen!=null){if(!B.open&&GL.ready&&$('#gl3d'))return glOpen();if(B.open&&GL.ready)return glClose();return toggleBook(!B.open)}
   if(ds.charm!=null){const s=$('#swingr');s.classList.remove('ring');void s.offsetWidth;s.classList.add('ring');chime();return}
