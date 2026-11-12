@@ -256,7 +256,7 @@ textarea.area{width:100%;min-height:90px;border:1px solid var(--line);background
 .content.bookmode{max-width:none;padding:0;margin:0}
 .content.bookmode .foot{display:none}
 .stage{position:relative;height:calc(100vh - 50px - env(safe-area-inset-bottom,0px));min-height:560px;overflow:hidden;perspective:2200px;touch-action:none;user-select:none;-webkit-user-select:none;
-  background:radial-gradient(ellipse 70% 60% at 50% 45%,#fdf9f5 0%,#f1e8de 62%,#e6dacd 100%)}
+  background:radial-gradient(ellipse 78% 64% at 50% 44%,#fbf2ef 0%,#efdcd8 58%,#dfc6c3 100%)}
 @media (min-width:900px){.stage{height:100vh}}
 .hintline{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;font-size:11px;letter-spacing:.06em;color:var(--muted);padding:0 16px;pointer-events:none;line-height:1.6}
 .scene{position:absolute;left:50%;top:45%;width:0;height:0;transform-origin:0 0;transform-style:preserve-3d;transition:transform .75s cubic-bezier(.33,.7,.25,1);will-change:transform}
@@ -960,8 +960,8 @@ const GL={ready:false,p:null,busy:false,yaw:0,pitch:0,idle:0};
 const TEX_BASE='tex/'; // текстури блокнота (3d/make_web_tex.py → 3d/web/tex)
 function glOK(){if(glOK.v!=null)return glOK.v;try{const c=document.createElement('canvas'),x=window.WebGLRenderingContext&&(c.getContext('webgl2')||c.getContext('webgl'));glOK.v=!!x;x?.getExtension('WEBGL_lose_context')?.loseContext()}catch(e){glOK.v=false} /* пробний контекст одразу звільняємо (iPhone має їх мало) */return glOK.v}
 // камери: на що дивимось (t), яку ширину й глибину вмістити (w, h), нахил від вертикалі й поворот довкола
-const GCAM={closed:{t:[.5,.05,.02],w:1.3,h:1.68,tilt:.34,az:.14},open:{t:[.55,.05,.02],w:3.05,h:1.7,tilt:.22,az:0},
-  openPhone:{t:[1.02,.05,.02],w:2.15,h:1.6,tilt:.2,az:0}};
+const GCAM={closed:{t:[.47,.07,0],w:1.62,h:2.0,tilt:.42,az:-.26},open:{t:[.475,.05,.02],w:3.2,h:1.7,tilt:.24,az:0},
+  openPhone:{t:[1.0,.05,.02],w:2.2,h:1.62,tilt:.22,az:0}};
 const openView=()=>innerWidth<700?GCAM.openPhone:GCAM.open;
 function glInit(){
   if(GL.p)return GL.p;
@@ -970,21 +970,21 @@ function glInit(){
     const [{createPlanner},{RoomEnvironment}]=await Promise.all([import('./planner3d.js'),import('three/addons/environments/RoomEnvironment.js')]);
     const R=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
     const phone=matchMedia('(pointer:coarse)').matches||innerWidth<700;
-    R.setPixelRatio(Math.min(devicePixelRatio||1,phone?1.5:2));R.outputColorSpace=THREE.SRGBColorSpace;R.toneMapping=THREE.NoToneMapping;
+    R.setPixelRatio(Math.min(devicePixelRatio||1,2));R.outputColorSpace=THREE.SRGBColorSpace;R.toneMapping=THREE.NoToneMapping;
     R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
     const scene=new THREE.Scene();
     const pm=new THREE.PMREMGenerator(R);scene.environment=pm.fromScene(new RoomEnvironment(),.04).texture;
     scene.add(new THREE.HemisphereLight(0xfff8f4,0xd9c4b8,.5));
     const key=new THREE.DirectionalLight(0xfff3e8,2.3);key.position.set(1.6,3.0,1.2);key.castShadow=true;
-    Object.assign(key.shadow.camera,{left:-1.6,right:1.6,top:1.6,bottom:-1.6,near:.5,far:8});key.shadow.mapSize.set(phone?1024:2048,phone?1024:2048);key.shadow.radius=6;key.shadow.bias=-.0004;key.shadow.normalBias=.012;
-    scene.add(key);const fill=new THREE.DirectionalLight(0xfff0f4,.35);fill.position.set(-2.6,2,1);scene.add(fill);
-    const ground=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.ShadowMaterial({opacity:.24}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+    Object.assign(key.shadow.camera,{left:-2.2,right:2.2,top:2.2,bottom:-2.2,near:.5,far:9});key.shadow.mapSize.set(phone?1024:2048,phone?1024:2048);key.shadow.radius=6;key.shadow.bias=-.0004;key.shadow.normalBias=.012;
+    scene.add(key);const fill=new THREE.DirectionalLight(0xfff0f4,.85);fill.position.set(-2.6,1.6,1.4);scene.add(fill);
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.ShadowMaterial({opacity:.3}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
     const planner=await createPlanner(THREE,TEX_BASE,{anisotropy:Math.min(8,R.capabilities.getMaxAnisotropy()),renderer:R});
     const model=planner.root;
     model.traverse(o=>{if(o.isMesh&&o.material&&!o.material.userData.keepEnv)o.material.envMapIntensity=o.material.metalness>.5?1.3:.32});
     const spin=new THREE.Group();spin.position.set(.48,0,0);model.position.set(-.48,0,0);spin.add(model);scene.add(spin);
     const dur=1;
-    const cam=new THREE.PerspectiveCamera(30,1,.05,40);
+    const cam=new THREE.PerspectiveCamera(38,1,.05,40);
     Object.assign(GL,{THREE,R,scene,cam,spin,planner,dur,ready:true,t:0,tw:null});if(/[?&]debug3d/.test(location.search))window.__gl=GL;
     glPose(0);
     R.domElement.addEventListener('pointerdown',glDown);
