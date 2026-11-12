@@ -258,7 +258,11 @@ textarea.area{width:100%;min-height:90px;border:1px solid var(--line);background
   background:radial-gradient(ellipse 70% 60% at 50% 45%,#fdf9f5 0%,#f1e8de 62%,#e6dacd 100%)}
 @media (min-width:900px){.stage{height:100vh}}
 .hintline{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;font-size:11px;letter-spacing:.06em;color:var(--muted);padding:0 16px;pointer-events:none;line-height:1.6}
-.scene{position:absolute;left:50%;top:47%;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+.scene{position:absolute;left:50%;top:45%;width:0;height:0;transform-origin:0 0;transform-style:preserve-3d;transition:transform .75s cubic-bezier(.33,.7,.25,1);will-change:transform}
+.cover{will-change:transform}
+/* перед переходом у пласку сторінку: усе, крім правої сторінки, тихо зникає */
+.book .bface.back,.book .backcover,.book .shadow,.book .ribbon,.book .rings,.book .charm{transition:opacity .55s ease}
+.book.focus .bface.back,.book.focus .backcover,.book.focus .shadow,.book.focus .ribbon,.book.focus .rings,.book.focus .charm{opacity:0}
 .scene.drag{transition:none}
 .book{position:relative;transform-style:preserve-3d;width:calc(var(--W) * 2);height:var(--H);margin-left:calc(var(--W) * -1);margin-top:calc(var(--H) / -2)}
 .shadow{position:absolute;left:calc(var(--W) - 10px);top:10px;width:calc(var(--W) + 30px);height:calc(var(--H) + 10px);background:rgba(60,14,24,.28);filter:blur(22px);transform:translateZ(-30px);transition:left 1.1s,width 1.1s;border-radius:8px}
@@ -336,7 +340,7 @@ textarea.area{width:100%;min-height:90px;border:1px solid var(--line);background
 .pop .pm button[aria-pressed="true"]{border-color:var(--wine)}
 .pop .pr{display:flex;gap:6px;justify-content:space-between;flex-wrap:wrap}
 /* телефон: після анімації розворот стає пласкою сторінкою (iOS погано натискає в 3D) */
-.flatwrap{position:absolute;left:0;right:0;top:calc(46px + env(safe-area-inset-top,0px));display:flex;justify-content:center;padding-right:26px}
+.flatwrap{position:absolute;left:0;right:0;top:45%;transform:translateY(-50%);display:flex;justify-content:center;padding-right:26px}
 .pgflat{position:relative;width:var(--W);height:var(--H);background:var(--paper);border-radius:6px;box-shadow:0 18px 40px -22px rgba(60,14,24,.5),0 0 0 1px #e9dfd3;touch-action:pan-y}
 .pgflat .mtabs{transform:none}
 .pgflat.in-l{animation:inL .35s ease-out}.pgflat.in-r{animation:inR .35s ease-out}
@@ -846,14 +850,15 @@ function bookLayout(){
   const st=$('#stage');if(!st)return;
   const cw=st.clientWidth,ch=st.clientHeight,narrow=cw<700;
   const flat=!!$('#pgflat');
-  let W=flat?Math.min(cw-60,(ch-230)/1.414,460):narrow?Math.min(cw-90,(ch-330)/1.414):Math.min(420,(cw-(B.tray?300:140))/2,(ch-170)/1.414);
+  let W=flat?Math.min(cw-60,(ch-260)/1.414,460):narrow?Math.min(cw-110,(ch-330)/1.414):Math.min(420,(cw-(B.tray?300:140))/2,(ch-170)/1.414);
   W=Math.max(150,Math.floor(W));
   st.style.setProperty('--W',W+'px');st.style.setProperty('--H',Math.round(W*1.414)+'px');
   st.style.setProperty('--cover','linear-gradient(135deg,#efc1cf,#e7adc0 55%,#dc9cb1)');
   if(flat)return;
-  let shift=0;if(!B.open)shift=-W/2;else if(narrow)shift=B.side==='right'?-W/2:W/2;
-  if(B.tray&&!narrow)shift-=80;
-  $('#scene').style.transform=`translateX(${shift}px) scale(${B.z}) rotateX(${B.rx}deg) rotateY(${B.ry}deg)`;
+  // inner: яку частину книги ставимо в центр (вона ж — центр обертання); outer: зсув усієї сцени
+  const inner=!B.open?-W/2:narrow?(B.side==='right'?-W/2:W/2):0;
+  const outer=(B.tray&&!narrow?-80:0)+(!B.open&&narrow?-12:0)+(B.dx||0);
+  $('#scene').style.transform=`translateX(${outer}px) scale(${B.z}) rotateX(${B.rx}deg) rotateY(${B.ry}deg) translateX(${inner}px)`;
   document.querySelectorAll('.narrowonly').forEach(b=>b.hidden=!narrow);
   requestAnimationFrame(()=>requestAnimationFrame(()=>$('#book')?.classList.remove('still')));
 }
@@ -870,17 +875,33 @@ function bookMonth(next,target){
   leaf.innerHTML=next?`<div class="lf f">${oldR}</div><div class="lf b">${newL}</div>`:`<div class="lf f">${newR}</div><div class="lf b">${oldL}</div>`;
   $('#book').appendChild(leaf);setTimeout(()=>leaf.remove(),800);
 }
-let flatT;
+let flatT,flatT2;
+const DEFV={rx:26,ry:-6};
+/* масштаб, за якого права сторінка 3D-книги збігається з пласкою сторінкою */
+function flatScale(){const st=$('#stage');const fW=Math.max(150,Math.floor(Math.min(st.clientWidth-60,(st.clientHeight-260)/1.414,460)));return fW/parseFloat(st.style.getPropertyValue('--W'))}
+function settle(on){B.rx=on?0:DEFV.rx;B.ry=on?0:DEFV.ry;B.dx=on?-13:0;B.z=on?flatScale():1;$('#book')?.classList.toggle('focus',on);bookLayout()}
 function toggleBook(open){
-  clearTimeout(flatT);B.flat=false;
-  // на телефоні: 3D-анімація відкриття, потім пласка сторінка, де все натискається
-  if(open&&innerWidth<700)flatT=setTimeout(()=>{if(B.open&&view==='book'){B.flat=true;B.slide='in-r';render();B.slide=''}},1250);
+  clearTimeout(flatT);clearTimeout(flatT2);
+  if(!open&&B.flat){
+    // закриття з пласкої сторінки: та сама картинка в 3D, камера відʼїжджає, обкладинка закривається
+    B.flat=false;B.open=true;B.pop=null;B.side='right';render();
+    const sc=$('#scene');sc.classList.add('drag');settle(true);void sc.offsetWidth;sc.classList.remove('drag');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{B.open=false;const bk=$('#book');bk.classList.remove('still','open');settle(false);flatT=setTimeout(()=>{if(view==='book'&&!B.open)render()},1250)}));
+    return;
+  }
+  B.flat=false;
+  // на телефоні: обкладинка відкривається, камера вирівнює книгу й наближає праву сторінку
+  // до розміру пласкої, і тоді непомітно підміняємо її на пласку, де все натискається
+  if(open&&innerWidth<700){
+    flatT=setTimeout(()=>{if(B.open&&view==='book')settle(true)},650);
+    flatT2=setTimeout(()=>{if(B.open&&view==='book'){B.flat=true;render();B.rx=DEFV.rx;B.ry=DEFV.ry;B.dx=0;B.z=1}},650+760);
+  }
   B.open=open;B.pop=null;if(!open)B.side='right';render();$('#book').classList.remove('still');
   // анімуємо обкладинку з попереднього стану
   const bk=$('#book');bk.classList.add('still');bk.classList.toggle('open',!open);bookLayout();void bk.offsetWidth;requestAnimationFrame(()=>{bk.classList.remove('still');bk.classList.toggle('open',open)})}
 
 /* жести на книзі: обертання, гортання за край, наліпки */
-let drag=null;
+let drag=null,eatClick=0;
 function pageAt(x,y,ghost){if(ghost)ghost.style.display='none';const el=document.elementFromPoint(x,y);if(ghost)ghost.style.display='';const p=el&&el.closest('.pg.right,.bface.back,.pgflat');if(!p)return null;
   const layer=p.querySelector('.stks');const r=layer.getBoundingClientRect();return{side:layer.dataset.page,x:Math.max(2,Math.min(98,(x-r.left)/r.width*100)),y:Math.max(2,Math.min(98,(y-r.top)/r.height*100))}}
 document.addEventListener('pointerdown',e=>{
@@ -894,15 +915,18 @@ document.addEventListener('pointerdown',e=>{
   if(t.closest('.pgflat')&&!t.closest('input,textarea,select,.pop,form,.mtabs')){drag={type:'swipe',x0:e.clientX,y0:e.clientY};return}
   const ed=t.closest('[data-edge]');
   if(ed&&B.open){drag={type:'flip',dir:ed.dataset.edge,x0:e.clientX};return}
+  // закриту книгу можна крутити, ведучи пальцем по обкладинці; коротке торкання — відкрити
+  if(!B.open&&t.closest('.bface.front')){drag={type:'orbit',x0:e.clientX,y0:e.clientY,rx:B.rx,ry:B.ry,moved:false};$('#scene').classList.add('drag');return}
   if(t.closest('.pg,.cover,.tray,.bui,.charm,.mtabs,.pop,input,textarea,button,form'))return;
-  if(t.closest('#stage')){drag={type:'orbit',x0:e.clientX,y0:e.clientY,rx:B.rx,ry:B.ry};$('#scene').classList.add('drag')}
+  if(t.closest('#stage')){drag={type:'orbit',x0:e.clientX,y0:e.clientY,rx:B.rx,ry:B.ry,moved:false};$('#scene').classList.add('drag')}
 });
 document.addEventListener('pointermove',e=>{
   if(!drag)return;
   if(drag.type==='new'){drag.g.style.left=e.clientX+'px';drag.g.style.top=e.clientY+'px';return}
   if(drag.type==='move'){const dx=e.clientX-drag.x0,dy=e.clientY-drag.y0;if(Math.abs(dx)+Math.abs(dy)>3)drag.moved=true;const s=doc('stickers').items[drag.i];
     drag.el.style.left=Math.max(2,Math.min(98,s.x+dx/drag.r.width*100))+'%';drag.el.style.top=Math.max(2,Math.min(98,s.y+dy/drag.r.height*100))+'%';return}
-  if(drag.type==='orbit'){B.ry=Math.max(-40,Math.min(40,drag.ry+(e.clientX-drag.x0)*.2));B.rx=Math.max(0,Math.min(55,drag.rx-(e.clientY-drag.y0)*.15));bookLayout()}
+  if(drag.type==='orbit'){const dx=e.clientX-drag.x0,dy=e.clientY-drag.y0;if(Math.abs(dx)+Math.abs(dy)>6)drag.moved=true;if(!drag.moved)return;
+    B.ry=Math.max(-60,Math.min(60,drag.ry+dx*.3));B.rx=Math.max(-10,Math.min(65,drag.rx-dy*.25));bookLayout()}
 });
 document.addEventListener('pointerup',e=>{
   if(!drag)return;const d=drag;drag=null;
@@ -910,7 +934,7 @@ document.addEventListener('pointerup',e=>{
   if(d.type==='move'){d.el.classList.remove('lift');if(d.moved){const s=doc('stickers').items[d.i];s.x=+parseFloat(d.el.style.left).toFixed(1);s.y=+parseFloat(d.el.style.top).toFixed(1);touch('stickers')}return}
   if(d.type==='swipe'){const dx=e.clientX-d.x0,dy=e.clientY-d.y0;if(Math.abs(dx)>60&&Math.abs(dy)<70){drag={type:'swiped'};setTimeout(()=>{if(drag&&drag.type==='swiped')drag=null},50);bookMonth(dx<0)}return}
   if(d.type==='flip'){const dx=e.clientX-d.x0;if(d.dir==='next'&&dx<-50)bookMonth(true);else if(d.dir==='prev'&&dx>50)bookMonth(false);return}
-  if(d.type==='orbit')$('#scene')?.classList.remove('drag');
+  if(d.type==='orbit'){$('#scene')?.classList.remove('drag');if(d.moved)eatClick=Date.now()}
 });
 document.addEventListener('pointercancel',()=>{if(drag?.g)drag.g.remove();drag=null;$('#scene')?.classList.remove('drag')});
 document.addEventListener('contextmenu',e=>{const sk=e.target.closest('.stk');if(sk&&view==='book'){e.preventDefault();doc('stickers').items.splice(+sk.dataset.stk,1);touch('stickers');rerender()}});
@@ -953,6 +977,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('[r
 document.addEventListener('click',e=>{
   const b=e.target.closest('button,[role=button]');if(!b)return;const ds=b.dataset;
   if(drag&&drag.type==='swiped'){drag=null;return} // після свайпу не відкривати дату під пальцем
+  if(Date.now()-eatClick<400)return; // після обертання книги не відкривати її
   if(ds.backup!=null)return doBackup();
   /* книга на головній */
   if(ds.opencover!=null){if(!B.open)toggleBook(true);return}
