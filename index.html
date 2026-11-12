@@ -975,13 +975,13 @@ function glInit(){
     Object.assign(key.shadow.camera,{left:-1.6,right:1.6,top:1.6,bottom:-1.6,near:.5,far:8});key.shadow.mapSize.set(phone?1024:2048,phone?1024:2048);key.shadow.radius=6;key.shadow.bias=-.0004;key.shadow.normalBias=.012;
     scene.add(key);const fill=new THREE.DirectionalLight(0xfff0f4,.35);fill.position.set(-2.6,2,1);scene.add(fill);
     const ground=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.ShadowMaterial({opacity:.24}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
-    const planner=await createPlanner(THREE,TEX_BASE,{anisotropy:Math.min(8,R.capabilities.getMaxAnisotropy())});
+    const planner=await createPlanner(THREE,TEX_BASE,{anisotropy:Math.min(8,R.capabilities.getMaxAnisotropy()),renderer:R});
     const model=planner.root;
-    model.traverse(o=>{if(o.isMesh&&o.material)o.material.envMapIntensity=o.material.metalness>.5?1.3:.32});
+    model.traverse(o=>{if(o.isMesh&&o.material&&!o.material.userData.keepEnv)o.material.envMapIntensity=o.material.metalness>.5?1.3:.32});
     const spin=new THREE.Group();spin.position.set(.48,0,0);model.position.set(-.48,0,0);spin.add(model);scene.add(spin);
     const dur=1;
     const cam=new THREE.PerspectiveCamera(30,1,.05,40);
-    Object.assign(GL,{THREE,R,scene,cam,spin,planner,dur,ready:true,t:0,tw:null});
+    Object.assign(GL,{THREE,R,scene,cam,spin,planner,dur,ready:true,t:0,tw:null});if(/[?&]debug3d/.test(location.search))window.__gl=GL;
     glPose(0);
     R.domElement.addEventListener('pointerdown',glDown);
     R.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();glFail('context lost')});

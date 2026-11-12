@@ -29,6 +29,13 @@ export async function createPlanner(THREE, base, opts = {}) {
     for (let i = 0; i < im.data.length; i += 4) { const v = 118 + rnd() * 20; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255 }
     g.putImageData(im, 0, 0);
   });
+  const smudge = canvasTex(512, (g, s) => {         // мікроподряпини й відбитки на пластику (карта шорсткості)
+    g.fillStyle = 'rgb(14,14,14)'; g.fillRect(0, 0, s, s);
+    g.filter = 'blur(10px)';
+    for (let i = 0; i < 14; i++) { const x = rnd() * s, y = rnd() * s, r = 20 + rnd() * 50; g.fillStyle = `rgba(80,80,80,${.25 + rnd() * .35})`; g.beginPath(); g.ellipse(x, y, r, r * (.5 + rnd() * .5), rnd() * 3, 0, 7); g.fill() }
+    g.filter = 'none';
+    for (let i = 0; i < 160; i++) { g.strokeStyle = `rgba(110,110,110,${.15 + rnd() * .25})`; g.lineWidth = .6; g.beginPath(); const x = rnd() * s, y = rnd() * s, a = rnd() * 6.3, l = 6 + rnd() * 40; g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke() }
+  });
   const coverLinen = linen.clone(); coverLinen.repeat.set(9, 15); coverLinen.needsUpdate = true;
   const boardLinen = linen.clone(); boardLinen.repeat.set(30, 30); boardLinen.needsUpdate = true;
   const pageGrain = grain.clone(); pageGrain.repeat.set(4, 6); pageGrain.needsUpdate = true;
@@ -43,6 +50,11 @@ export async function createPlanner(THREE, base, opts = {}) {
     edge: new THREE.MeshStandardMaterial({ map: T.edge, roughness: .95 }),
     gold: new THREE.MeshStandardMaterial({ color: '#d9b06a', metalness: 1, roughness: .22 }),
     elastic: new THREE.MeshPhysicalMaterial({ color: '#5e0c2e', roughness: .6, sheen: .8, sheenRoughness: .5, sheenColor: new THREE.Color('#b0607e'), transparent: true }),
+    // прозорий глянцевий чохол: справжнє заломлення (transmission), лак, ледь помітна райдужність плівки
+    // колір чорний, змішування додавальне: пластик лише додає відбиття й блики, обкладинка під ним лишається чіткою
+    sleeve: new THREE.MeshPhysicalMaterial({ color: '#000000', metalness: 0, roughness: .35, roughnessMap: smudge, ior: 1.5, specularIntensity: 1,
+      clearcoat: 1, clearcoatRoughness: .03, iridescence: .3, iridescenceIOR: 1.3, iridescenceThicknessRange: [200, 560], envMapIntensity: .12,
+      transparent: true, opacity: .05, depthWrite: false, blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor }),
     ribbon: new THREE.MeshPhysicalMaterial({ color: '#6a1434', roughness: .38, sheen: 1, sheenRoughness: .3, sheenColor: new THREE.Color('#d48aa5'), side: THREE.DoubleSide }),
   };
   const pageMat = (tex, side = THREE.FrontSide) => new THREE.MeshStandardMaterial({ map: tex, bumpMap: pageGrain, bumpScale: .25, roughness: .88, side });
@@ -83,6 +95,7 @@ export async function createPlanner(THREE, base, opts = {}) {
   root.add(slab(-.08, 1.05, -.78, .78, 0, .02, .05, M.board, .004));
   root.add(face(-.08, 1.05, -.78, .78, -.0004, .05, M.back, { down: true, mirror: true }));
   root.add(face(-.08, 1.05, -.78, .78, .0204, .05, M.inner));
+  const sleeveBack = slab(-.086, 1.057, -.787, .787, -.0012, .0222, .054, M.sleeve, .0018); root.add(sleeveBack);
   // правий блок сторінок; згори — права сторінка розвороту
   root.add(slab(0, 1, -.75, .75, .02, .07, .02, M.edge, .0015));
   root.add(face(0, 1, -.75, .75, .0703, .02, pageMat(T.spread_R)));
@@ -95,6 +108,7 @@ export async function createPlanner(THREE, base, opts = {}) {
   fl.add(slab(.13, 1.05, -.78, .78, .12, .14, .05, M.board, .004));
   fl.add(face(.13, 1.05, -.78, .78, .1404, .05, M.cover));
   fl.add(face(.13, 1.05, -.78, .78, .1196, .05, M.inner, { down: true }));
+  const sleeveFront = slab(.124, 1.057, -.787, .787, .1183, .1424, .054, M.sleeve, .0018); fl.add(sleeveFront);
 
   // аркуші, що перегортаються: вигнута площина з двома сторонами
   const NS = 56, S0 = -.05, S1 = .95;               // s — відстань від осі кілець уздовж аркуша
@@ -140,7 +154,7 @@ export async function createPlanner(THREE, base, opts = {}) {
   }
 
   // резинка: петля навколо книги поперек, сплющена трубка
-  const bandPts = [], yb = -.003, yt = .146, zr = .788, rr = .012;
+  const bandPts = [], yb = -.0045, yt = .1462, zr = .7915, rr = .012;
   const arc = (cy, cz, a0, a1) => { for (let i = 0; i <= 6; i++) { const a = a0 + (a1 - a0) * i / 6; bandPts.push(new THREE.Vector3(0, cy + Math.sin(a) * rr, cz + Math.cos(a) * rr)) } };
   arc(yt - rr, zr - rr, 0, Math.PI / 2); arc(yt - rr, -zr + rr, Math.PI / 2, Math.PI); arc(yb + rr, -zr + rr, Math.PI, 1.5 * Math.PI); arc(yb + rr, zr - rr, 1.5 * Math.PI, 2 * Math.PI);
   const band = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(bandPts, true, 'centripetal'), 220, .0034, 10, true), M.elastic);
@@ -158,6 +172,21 @@ export async function createPlanner(THREE, base, opts = {}) {
   }
 
   shadowy(root);
+  // студійне оточення лише для чохла: софтбокси й діагональна світлова смуга дають «скляні» блики,
+  // які пробігають поверхнею, коли блокнот гойдається чи обертається
+  if (opts.renderer) {
+    const env = new THREE.Scene(); env.background = new THREE.Color(0, 0, 0);
+    const panel = (w, h, pos, rot, k) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(k, k * .97, k * .94), side: THREE.DoubleSide }));
+      m.position.set(...pos); m.lookAt(0, 0, 0); m.rotateZ(rot); env.add(m) };
+    // напрямок дзеркального відбиття з камери на обкладинку ≈ (-0.4, 0.6, -0.7): смуги проходять крізь нього
+    panel(2.2, 1.4, [-3.6, 2.7, -2.4], 0, .7);          // софтбокс збоку — м'який перелив біля корінця
+    panel(7, .11, [-2.0, 3.0, -3.55], .6, 1.7);         // головний діагональний блиск
+    panel(7, .04, [-1.6, 3.24, -3.45], .6, 1.5);        // тонкий другий
+    panel(1.6, 2.4, [3.4, 2.8, -2.0], 0, .6);           // контровий справа
+    const pm = new THREE.PMREMGenerator(opts.renderer);
+    M.sleeve.envMap = pm.fromScene(env, .012).texture; pm.dispose();
+  }
+  for (const m of [sleeveBack, sleeveFront]) { m.castShadow = false; m.receiveShadow = false; m.material.userData.keepEnv = true }
 
   // м'яка контактна тінь під книгою
   const blob = canvasTex(256, (g, s) => {
@@ -180,5 +209,5 @@ export async function createPlanner(THREE, base, opts = {}) {
     contact.scale.x = 1 + .9 * ease(kc); contact.position.x = .48 - .45 * ease(kc);
   }
   setOpen(0);
-  return { root, setOpen };
+  return { root, setOpen, M };
 }
