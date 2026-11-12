@@ -832,8 +832,8 @@ function vBook(){
      <div class="bui"><button data-bookopen>Закрити</button><button class="sec" data-bstep="-1" aria-label="Попередній місяць">‹</button><button class="sec" data-bstep="1" aria-label="Наступний місяць">›</button><button class="sec" data-bside>${B.side==='right'?'← Цілі місяця':'Календар →'}</button><button class="sec" data-traytoggle>${B.tray?'Сховати наліпки':'Наліпки'}</button><button class="sec" data-go="home">Огляд дня</button>${SITE?'<button class="sec" data-backup>Копія</button>':''}</div>
     </div>`;
   }
-  return `<div class="stage${!B.open&&GL.ready?' gl':''}" id="stage">
-   <div class="hintline">${hint}</div>${!B.open&&glOK()?'<div class="gl3d" id="gl3d" data-glopen role="button" tabindex="0" aria-label="Відкрити планер"></div>':''}
+  return `<div class="stage${!B.open&&GL.ready&&GL.shown?' gl':''}" id="stage">
+   <div class="hintline">${hint}</div>${!B.open&&glOK()&&!GL.failed?'<div class="gl3d" id="gl3d" data-glopen role="button" tabindex="0" aria-label="Відкрити планер"></div>':''}
    <div class="scene" id="scene"><div class="book ${B.open?'open':''} still" id="book">
     <div class="shadow"></div><div class="backcover"></div>
     <div class="pg right"><div class="edge r" data-edge="next" title="Тягни вліво — наступний місяць"></div>${rightPageHTML()}<div class="stks" data-page="R">${pageStks('R')}</div>
@@ -965,13 +965,14 @@ function glInit(){
     const THREE=await import('three');
     const [{GLTFLoader},{RoomEnvironment}]=await Promise.all([import('three/addons/loaders/GLTFLoader.js'),import('three/addons/environments/RoomEnvironment.js')]);
     const R=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
-    R.setPixelRatio(Math.min(devicePixelRatio||1,2));R.outputColorSpace=THREE.SRGBColorSpace;R.toneMapping=THREE.NoToneMapping;
+    const phone=matchMedia('(pointer:coarse)').matches||innerWidth<700;
+    R.setPixelRatio(Math.min(devicePixelRatio||1,phone?1.5:2));R.outputColorSpace=THREE.SRGBColorSpace;R.toneMapping=THREE.NoToneMapping;
     R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
     const scene=new THREE.Scene();
     const pm=new THREE.PMREMGenerator(R);scene.environment=pm.fromScene(new RoomEnvironment(),.04).texture;
     scene.add(new THREE.HemisphereLight(0xfff8f4,0xeadbd2,.9));
     const key=new THREE.DirectionalLight(0xfff6ee,1.5);key.position.set(2.2,3.4,2.0);key.castShadow=true;
-    Object.assign(key.shadow.camera,{left:-1.6,right:1.6,top:1.6,bottom:-1.6,near:.5,far:8});key.shadow.mapSize.set(2048,2048);key.shadow.radius=6;key.shadow.bias=-.0004;
+    Object.assign(key.shadow.camera,{left:-1.6,right:1.6,top:1.6,bottom:-1.6,near:.5,far:8});key.shadow.mapSize.set(phone?1024:2048,phone?1024:2048);key.shadow.radius=6;key.shadow.bias=-.0004;
     scene.add(key);const fill=new THREE.DirectionalLight(0xfff0f4,.35);fill.position.set(-2.6,2,1);scene.add(fill);
     const ground=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.ShadowMaterial({opacity:.16}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
     const gltf=await new GLTFLoader().loadAsync(GLB_URL);
@@ -984,9 +985,13 @@ function glInit(){
     Object.assign(GL,{THREE,R,scene,cam,spin,mixer,acts,dur,ready:true,t:0,from:null,to:null,tw:null});
     glPose(0);
     R.domElement.addEventListener('pointerdown',glDown);
-  })().catch(e=>{console.warn('3D-модель не завантажилась',e);GL.failed=true});
+    R.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();glFail('context lost')});
+  })().catch(e=>glFail(e));
+  // якщо модель не встигла за 20 с — лишаємо CSS-книгу
+  setTimeout(()=>{if(!GL.ready)glFail('timeout')},20000);
   return GL.p;
 }
+function glFail(why){console.warn('3D-модель вимкнено:',why);GL.failed=true;GL.ready=false;GL.busy=false;$('#stage')?.classList.remove('gl');$('#gl3d')?.remove()}
 function glPose(t){GL.t=t;GL.mixer.setTime(t)}
 const lerp=(a,b,k)=>a+(b-a)*k,ease=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
 function glCamAt(k,a,b){
@@ -997,9 +1002,9 @@ function glCamAt(k,a,b){
   const P=a.p.map((v,i)=>lerp(v,b.p[i],k)),T=a.t.map((v,i)=>lerp(v,b.t[i],k));
   cam.position.set(...P.map((v,i)=>T[i]+(v-T[i])*back));cam.lookAt(...T);cam.updateProjectionMatrix();
 }
-function glSize(){const c=GL.R.domElement,p=c.parentElement;if(!p)return;const w=p.clientWidth,h=p.clientHeight;if(c.width!==Math.round(w*GL.R.getPixelRatio())||c.height!==Math.round(h*GL.R.getPixelRatio()))GL.R.setSize(w,h,false)}
+function glSize(){const c=GL.R.domElement,p=c.parentElement;if(!p)return;const w=p.clientWidth,h=p.clientHeight;if(!w||!h)return;if(c.width!==Math.round(w*GL.R.getPixelRatio())||c.height!==Math.round(h*GL.R.getPixelRatio()))GL.R.setSize(w,h,false)}
 function glLoop(now){
-  GL.raf=0;const c=GL.R.domElement;if(!c.isConnected&&!GL.busy)return;
+  GL.raf=0;if(GL.failed)return;const c=GL.R.domElement;if(!c.isConnected&&!GL.busy)return;
   glSize();
   if(GL.tw){ // анімація відкриття/закриття
     const w=GL.tw,k=Math.min(1,(now-w.t0)/w.ms);
@@ -1020,13 +1025,16 @@ function glMount(){
   const box=$('#gl3d');
   if(!box||GL.failed)return;
   glInit().then(()=>{
-    const b=$('#gl3d');if(!b||!GL.ready)return;
+    const b=$('#gl3d');if(!b||!GL.ready||GL.failed)return;
     if(GL.R.domElement.parentElement!==b){b.innerHTML='';b.appendChild(GL.R.domElement)}
     const st=$('#stage');
     if(GL.closing){ // з розвороту: модель зʼявляється розкритою і закривається
       GL.closing=false;glPose(GL.dur);GL.yaw=0;GL.pitch=0;
       const narrow=innerWidth<700;GL.tw={t0:performance.now(),ms:reduced()?1:1700,a0:GL.dur,a1:0,c0:narrow?GCAM.flat:GCAM.open,c1:GCAM.closed,camDelay:0,y0:0,x0:0,done:null};
     }else if(!GL.busy){glPose(0)}
+    glSize();glCamAt(0,GCAM.closed,GCAM.closed);GL.R.render(GL.scene,GL.cam);
+    if(GL.R.getContext().isContextLost())return glFail('no context');
+    GL.shown=true;
     if(!st.classList.contains('gl')){
       const hl=st.querySelector('.hintline');if(hl)hl.textContent=innerWidth<700?'Натисни на планер, щоб відкрити':'Натисни на планер, щоб відкрити · тягни, щоб повернути, колесо — наблизити';
       requestAnimationFrame(()=>st.classList.add('gl'));
